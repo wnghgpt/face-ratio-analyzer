@@ -1,0 +1,12 @@
+{
+  "name": "샘플_003",
+  "tags": ["귀여운", "발랄한", "동안의"],
+  "faceRatio": "1:1.3:0.7",
+  "rollAngle": 3.8,
+  "ratios": {
+    "width": 105,
+    "height": 136,
+    "depth": 73,
+    "details": "측정 상세 정보"
+  }
+}

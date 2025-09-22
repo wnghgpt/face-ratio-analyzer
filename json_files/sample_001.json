@@ -1,0 +1,12 @@
+{
+  "name": "샘플_001",
+  "tags": ["귀여운", "섹시한", "청순한"],
+  "faceRatio": "1:1.2:0.8",
+  "rollAngle": 2.5,
+  "ratios": {
+    "width": 100,
+    "height": 120,
+    "depth": 80,
+    "details": "측정 상세 정보"
+  }
+}

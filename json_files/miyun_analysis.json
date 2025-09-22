@@ -1,0 +1,100 @@
+{
+  "name": "miyun",
+  "tags": [
+    "고양이",
+    "이국적인",
+    "여성스런",
+    "섹시한",
+    "성숙한",
+    "화려한",
+    "차가운",
+    "세련된",
+    "고급스러운",
+    "현대적인"
+  ],
+  "faceRatio": "1:1.04:0.89",
+  "rollAngle": null,
+  "ratios": {
+    "전체비율": {
+      "얼굴길이 비율": "1:1.04:0.89",
+      "얼굴 가로세로 비율": "1:0.71"
+    },
+    "항목별": {
+      "눈썹": {
+        "높이 비율": {
+          "hasLeftRight": true,
+          "left": "0.35",
+          "right": "0.30"
+        },
+        "Peak 위치": {
+          "hasLeftRight": true,
+          "left": "0.36:0.64",
+          "right": "0.35:0.65"
+        }
+      },
+      "눈": {
+        "눈너비:미간": {
+          "value": "0.20:0.20:0.25:0.19:0.16",
+          "hasLeftRight": false
+        },
+        "Canthal tilt": {
+          "hasLeftRight": true,
+          "right": "7.1°",
+          "left": "9.8°"
+        },
+        "눈 높이/폭": {
+          "hasLeftRight": true,
+          "left": "0.508",
+          "right": "0.513"
+        },
+        "눈과 눈썹 사이 거리": {
+          "hasLeftRight": true,
+          "left": "0.58:1",
+          "right": "0.44:1"
+        },
+        "가려진 위 동공": {
+          "hasLeftRight": true,
+          "left": "0.005",
+          "right": "0.003"
+        },
+        "쌍꺼풀 높이": {
+          "hasLeftRight": true,
+          "right": "6.63:1:14.23",
+          "left": "8.28:1:16.02"
+        }
+      },
+      "코": {
+        "미간:코 너비": {
+          "value": "1:1.00",
+          "hasLeftRight": false
+        },
+        "코 길이": {
+          "value": "1:0.70:0.84",
+          "hasLeftRight": false
+        },
+        "코끝 폭": {
+          "value": "1:0.31",
+          "hasLeftRight": false
+        },
+        "코 높이": {
+          "value": "1:1.23",
+          "hasLeftRight": false
+        }
+      },
+      "입": {
+        "콧볼:입술 너비": {
+          "value": "1:1.27",
+          "hasLeftRight": false
+        },
+        "입술 두께": {
+          "value": "1:1.59",
+          "hasLeftRight": false
+        },
+        "하안면 비율": {
+          "value": "1:1.86",
+          "hasLeftRight": false
+        }
+      }
+    }
+  }
+}

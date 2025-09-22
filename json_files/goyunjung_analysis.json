@@ -1,0 +1,100 @@
+{
+  "name": "goyunjung",
+  "tags": [
+    "고양이",
+    "이국적인",
+    "여성스런",
+    "귀여운",
+    "동안의",
+    "화려한",
+    "차가운",
+    "세련된",
+    "고급스러운",
+    "현대적인"
+  ],
+  "faceRatio": "1:1.07:1.06",
+  "rollAngle": null,
+  "ratios": {
+    "전체비율": {
+      "얼굴길이 비율": "1:1.07:1.06",
+      "얼굴 가로세로 비율": "1:0.70"
+    },
+    "항목별": {
+      "눈썹": {
+        "높이 비율": {
+          "hasLeftRight": true,
+          "left": "0.28",
+          "right": "0.28"
+        },
+        "Peak 위치": {
+          "hasLeftRight": true,
+          "left": "0.34:0.66",
+          "right": "0.35:0.65"
+        }
+      },
+      "눈": {
+        "눈너비:미간": {
+          "value": "0.17:0.20:0.25:0.20:0.18",
+          "hasLeftRight": false
+        },
+        "Canthal tilt": {
+          "hasLeftRight": true,
+          "right": "4.8°",
+          "left": "3.7°"
+        },
+        "눈 높이/폭": {
+          "hasLeftRight": true,
+          "left": "0.411",
+          "right": "0.432"
+        },
+        "눈과 눈썹 사이 거리": {
+          "hasLeftRight": true,
+          "left": "0.67:1",
+          "right": "0.75:1"
+        },
+        "가려진 위 동공": {
+          "hasLeftRight": true,
+          "left": "0.001",
+          "right": "0.001"
+        },
+        "쌍꺼풀 높이": {
+          "hasLeftRight": true,
+          "right": "3.78:1:4.07",
+          "left": "2.76:1:3.03"
+        }
+      },
+      "코": {
+        "미간:코 너비": {
+          "value": "1:1.05",
+          "hasLeftRight": false
+        },
+        "코 길이": {
+          "value": "1:0.79:1.09",
+          "hasLeftRight": false
+        },
+        "코끝 폭": {
+          "value": "1:0.29",
+          "hasLeftRight": false
+        },
+        "코 높이": {
+          "value": "1:1.72",
+          "hasLeftRight": false
+        }
+      },
+      "입": {
+        "콧볼:입술 너비": {
+          "value": "1:1.23",
+          "hasLeftRight": false
+        },
+        "입술 두께": {
+          "value": "1:1.70",
+          "hasLeftRight": false
+        },
+        "하안면 비율": {
+          "value": "1:2.14",
+          "hasLeftRight": false
+        }
+      }
+    }
+  }
+}
