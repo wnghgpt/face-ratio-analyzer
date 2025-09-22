@@ -74,6 +74,7 @@ class DatabaseManager:
                         ratio_3_2=ratio_components.get('ratio_3_2'),
                         roll_angle=json_data.get('rollAngle', 0),
                         ratios_detail=json.dumps(json_data.get('ratios', {})),
+                        landmarks=json.dumps(json_data.get('landmarks', [])),
                         meta_data=json.dumps({
                             'source_file': json_data.get('_filename', ''),
                             'import_date': datetime.utcnow().isoformat()

@@ -26,5 +26,5 @@ echo "🌐 Streamlit 앱을 실행합니다..."
 echo "📱 브라우저에서 http://localhost:8501 을 열어주세요."
 echo ""
 
-# Streamlit 실행
-streamlit run app.py
+# Streamlit 실행 (메인 앱)
+streamlit run app_enhanced.py

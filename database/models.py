@@ -39,6 +39,7 @@ class FaceData(Base):
 
     # JSON 데이터들
     ratios_detail = Column(Text)  # 상세 비율 정보 JSON
+    landmarks = Column(Text)       # 랜드마크 좌표 JSON (492개 점)
     meta_data = Column(Text)       # 추가 메타데이터 JSON
 
     # 관계
@@ -63,6 +64,7 @@ class FaceData(Base):
             'ratio_3_2': self.ratio_3_2,
             'roll_angle': self.roll_angle,
             'ratios_detail': json.loads(self.ratios_detail) if self.ratios_detail else {},
+            'landmarks': json.loads(self.landmarks) if self.landmarks else [],
             'metadata': json.loads(self.meta_data) if self.meta_data else {},
             'tags': [tag.tag_name for tag in self.tags]
         }
