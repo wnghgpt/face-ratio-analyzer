@@ -51,7 +51,7 @@ def render_landmarks_analysis_tab():
     )
 
     # 2. 길이1 설정
-    st.sidebar.write("### 2. 길이1 설정")
+    st.sidebar.write("### 2. 길이1 설정(x축)")
     col1, col2, col3 = st.sidebar.columns([1, 1, 1.2])
 
     with col1:
@@ -81,7 +81,7 @@ def render_landmarks_analysis_tab():
 
     # 3. 길이2 설정 (비율 계산일 때만 표시)
     if purpose == "⚖️ 비율 계산":
-        st.sidebar.write("### 3. 길이2 설정")
+        st.sidebar.write("### 3. 길이2 설정(y축)")
         col1, col2, col3 = st.sidebar.columns([1, 1, 1.2])
 
         with col1:
@@ -125,7 +125,48 @@ def render_landmarks_analysis_tab():
         swap_axes = st.sidebar.checkbox("🔄 X축과 Y축 바꾸기",
                                       help="길이1과 길이2의 축을 서로 바꿔서 표시합니다.")
 
-    # 5. 분석 실행
+    # 5. 태그 하이라이트 옵션
+    st.sidebar.write("### 🎨 태그 하이라이트")
+    enable_tag_highlight = st.sidebar.checkbox("태그별 색상 구분", help="각 태그별로 다른 색상으로 점을 표시합니다.")
+    selected_tags = []
+    tag_search = ""
+
+    if enable_tag_highlight:
+        # 모든 태그 수집 (데이터가 있을 때만)
+        try:
+            all_tags = set()
+            for _, row in landmarks_data.iterrows():
+                if 'tags' in row and row['tags']:
+                    tags = row['tags'] if isinstance(row['tags'], list) else []
+                    all_tags.update(tags)
+
+            if all_tags:
+                # 태그 검색 기능
+                tag_search = st.sidebar.text_input(
+                    "🔍 태그 검색:",
+                    help="검색어가 포함된 태그만 표시합니다."
+                )
+
+                # 검색 결과 필터링
+                filtered_tags = [tag for tag in sorted(all_tags) if tag_search.lower() in tag.lower()] if tag_search else sorted(all_tags)
+
+                selected_tags = st.sidebar.multiselect(
+                    "🎯 하이라이트할 태그들:",
+                    filtered_tags,
+                    help="여러 태그를 선택하면 각각 다른 색상으로 표시됩니다. 아무것도 선택하지 않으면 전체 태그가 색상으로 구분됩니다."
+                )
+
+                # 태그 리스트 표시
+                if len(all_tags) > 0:
+                    st.sidebar.write(f"📋 **총 {len(all_tags)}개 태그**")
+                    with st.sidebar.expander("태그 목록 보기"):
+                        for tag in sorted(all_tags):
+                            if not tag_search or tag_search.lower() in tag.lower():
+                                st.write(f"• {tag}")
+        except:
+            st.sidebar.info("태그 데이터를 불러올 수 없습니다.")
+
+    # 6. 분석 실행
     if st.sidebar.button("🚀 분석 실행"):
         execute_length_based_analysis(
             landmarks_data,
@@ -133,7 +174,10 @@ def render_landmarks_analysis_tab():
             length2_point1, length2_point2, length2_calc,
             purpose,
             normalize_ratio,
-            swap_axes
+            swap_axes,
+            enable_tag_highlight,
+            selected_tags,
+            tag_search
         )
 
 
@@ -150,54 +194,7 @@ def load_landmarks_data():
     return landmarks_data
 
 
-def get_point_names():
-    """주요 랜드마크 점들의 이름 매핑"""
-    return {
-        # 얼굴 윤곽
-        0: "턱끝",
-        17: "왼쪽 눈썹 끝",
-        26: "오른쪽 눈썹 끝",
 
-        # 눈
-        36: "왼쪽 눈 안쪽",
-        39: "왼쪽 눈 바깥쪽",
-        42: "오른쪽 눈 안쪽",
-        45: "오른쪽 눈 바깥쪽",
-        37: "왼쪽 눈 위",
-        38: "왼쪽 눈 아래",
-        43: "오른쪽 눈 위",
-        44: "오른쪽 눈 아래",
-
-        # 코
-        27: "코 시작점",
-        30: "코끝",
-        31: "왼쪽 콧볼",
-        35: "오른쪽 콧볼",
-
-        # 입
-        48: "왼쪽 입꼬리",
-        54: "오른쪽 입꼬리",
-        51: "윗입술 중앙",
-        57: "아랫입술 중앙",
-
-        # 기타 주요점
-        33: "왼쪽 눈 중심",
-        133: "오른쪽 눈 중심",
-        1: "이마 중앙",
-        152: "턱 중앙"
-    }
-
-def get_default_points(purpose):
-    """계산 목적에 따른 기본 점들 제안"""
-    defaults = {
-        "📍 단일 점 분석": [30],  # 코끝
-        "📏 거리 측정": [33, 133],  # 양쪽 눈 중심 (눈 간격)
-        "⚖️ 비율 계산": [33, 133, 48, 54],  # 눈 간격 : 입 너비
-        "📐 각도 측정": [36, 30, 42],  # 왼쪽눈-코끝-오른쪽눈 각도
-        "📊 면적 계산": [27, 31, 35],  # 코 삼각형
-        "⚖️ 대칭성 분석": [36, 42, 48, 54]  # 왼쪽눈-오른쪽눈, 왼쪽입꼬리-오른쪽입꼬리
-    }
-    return defaults.get(purpose, [0, 50, 100, 150])
 
 
 def calculate_landmarks_metric(landmarks, points, calc_type):
@@ -348,14 +345,31 @@ def calculate_landmarks_metric(landmarks, points, calc_type):
         return None
 
 
-def execute_length_based_analysis(landmarks_data, l1_p1, l1_p2, l1_calc, l2_p1, l2_p2, l2_calc, purpose, normalize_ratio=False, swap_axes=False):
+def execute_length_based_analysis(landmarks_data, l1_p1, l1_p2, l1_calc, l2_p1, l2_p2, l2_calc, purpose, normalize_ratio=False, swap_axes=False, enable_tag_highlight=False, selected_tags=None, tag_search=""):
     """길이 기반 분석 실행"""
+    if selected_tags is None:
+        selected_tags = []
     st.write("### 🔄 분석 실행 중...")
 
     # 각 데이터에 대해 길이1, 길이2 계산
     length1_values = []
     length2_values = []
     names = []
+    tags_list = []
+    colors = []
+
+    # 태그별 컬러 매핑 생성
+    if enable_tag_highlight:
+        all_tags = set()
+        for _, row in landmarks_data.iterrows():
+            if 'tags' in row and row['tags']:
+                tags = row['tags'] if isinstance(row['tags'], list) else []
+                all_tags.update(tags)
+
+        # 태그별 고유 색상 생성
+        color_palette = px.colors.qualitative.Set3 + px.colors.qualitative.Pastel + px.colors.qualitative.Set1
+        tag_color_map = {tag: color_palette[i % len(color_palette)] for i, tag in enumerate(sorted(all_tags))}
+        tag_color_map['기타'] = '#808080'  # 회색
 
     for _, row in landmarks_data.iterrows():
         try:
@@ -391,9 +405,37 @@ def execute_length_based_analysis(landmarks_data, l1_p1, l1_p2, l1_calc, l2_p1, 
                 final_length1 = round(final_length1, 2)
                 final_length2 = round(final_length2, 2)
 
+                # 태그 정보 수집
+                row_tags = []
+                if 'tags' in row and row['tags']:
+                    row_tags = row['tags'] if isinstance(row['tags'], list) else []
+
+                # 색상 결정
+                if enable_tag_highlight:
+                    if selected_tags:
+                        # 특정 태그들이 선택된 경우
+                        matching_tags = [tag for tag in selected_tags if tag in row_tags]
+                        if matching_tags:
+                            # 선택된 태그 중 첫 번째 매칭되는 태그의 색상 사용
+                            color = tag_color_map.get(matching_tags[0], '#FF0000')
+                            opacity = 1.0
+                        else:
+                            color = '#666666'  # 진한 회색으로 dimmed
+                            opacity = 0.8
+                    else:
+                        # 아무것도 선택하지 않으면 전체 태그 색상 구분
+                        primary_tag = row_tags[0] if row_tags else '기타'
+                        color = tag_color_map.get(primary_tag, '#808080')
+                        opacity = 1.0
+                else:
+                    color = '#1f77b4'  # 기본 plotly 색상
+                    opacity = 1.0
+
                 length1_values.append(final_length1)
                 length2_values.append(final_length2)
                 names.append(row['name'])
+                tags_list.append(', '.join(row_tags) if row_tags else '태그없음')
+                colors.append(color)
 
         except Exception as e:
             st.error(f"데이터 처리 오류 ({row['name']}): {e}")
@@ -410,7 +452,9 @@ def execute_length_based_analysis(landmarks_data, l1_p1, l1_p2, l1_calc, l2_p1, 
     result_df = pd.DataFrame({
         'name': names,
         'length1': length1_values,
-        'length2': length2_values
+        'length2': length2_values,
+        'tags': tags_list,
+        'color': colors
     })
 
     # 모든 경우에 산점도로 표시
@@ -443,32 +487,127 @@ def execute_length_based_analysis(landmarks_data, l1_p1, l1_p2, l1_calc, l2_p1, 
                     x_label = f'길이1 ({l1_calc})'
                     y_label = f'길이2 ({l2_calc})'
 
-            fig = px.scatter(
-                result_df,
-                x=x_data,
-                y=y_data,
-                title=title,
-                labels={x_data: x_label, y_data: y_label},
-                hover_data=['name']
-            )
+            # 태그 하이라이트가 활성화되어 있으면 색상 적용
+            if enable_tag_highlight:
+                fig = go.Figure()
+
+                # 각 점을 개별적으로 추가하여 색상 제어
+                for idx, row in result_df.iterrows():
+                    fig.add_trace(go.Scatter(
+                        x=[row[x_data]],
+                        y=[row[y_data]],
+                        mode='markers',
+                        marker=dict(
+                            color=row['color'],
+                            size=8,
+                            opacity=0.8,
+                            line=dict(width=1, color='white')
+                        ),
+                        hovertemplate=f"이름: {row['name']}<br>태그: {row['tags']}<br>길이1: {row['length1']}<br>길이2: {row['length2']}<extra></extra>",
+                        showlegend=False,
+                        name=row['name']
+                    ))
+
+                fig.update_layout(
+                    title=title,
+                    xaxis_title=x_label,
+                    yaxis_title=y_label
+                )
+            else:
+                fig = px.scatter(
+                    result_df,
+                    x=x_data,
+                    y=y_data,
+                    title=title,
+                    labels={x_data: x_label, y_data: y_label},
+                    hover_data=['name', 'tags']
+                )
         else:
             # 거리 측정인 경우: 히스토그램 대신 strip plot(산점도)로 변경하여 hover 지원
             # Y축에 약간의 랜덤 지터 추가하여 점들이 겹치지 않게 함
             np.random.seed(42)  # 일관된 결과를 위해
             result_df['y_jitter'] = np.random.uniform(-0.1, 0.1, len(result_df))
 
-            fig = px.scatter(
-                result_df,
-                x='length1',
-                y='y_jitter',
-                title=f'거리 분포 ({l1_calc}) - 각 점이 개별 데이터',
-                labels={'length1': f'거리 ({l1_calc})', 'y_jitter': '분산 (시각화용)'},
-                hover_data=['name']
-            )
-            # Y축 숨기기 (의미없는 축이므로)
-            fig.update_yaxes(showticklabels=False, title_text="")
+            if enable_tag_highlight:
+                fig = go.Figure()
+
+                # 각 점을 개별적으로 추가하여 색상 제어
+                for idx, row in result_df.iterrows():
+                    fig.add_trace(go.Scatter(
+                        x=[row['length1']],
+                        y=[row['y_jitter']],
+                        mode='markers',
+                        marker=dict(
+                            color=row['color'],
+                            size=8,
+                            opacity=0.8,
+                            line=dict(width=1, color='white')
+                        ),
+                        hovertemplate=f"이름: {row['name']}<br>태그: {row['tags']}<br>길이1: {row['length1']}<br>길이2: {row['length2']}<extra></extra>",
+                        showlegend=False,
+                        name=row['name']
+                    ))
+
+                fig.update_layout(
+                    title=f'거리 분포 ({l1_calc}) - 태그별 색상 구분',
+                    xaxis_title=f'거리 ({l1_calc})',
+                    yaxis_title=""
+                )
+                # Y축 숨기기 (의미없는 축이므로)
+                fig.update_yaxes(showticklabels=False)
+            else:
+                fig = px.scatter(
+                    result_df,
+                    x='length1',
+                    y='y_jitter',
+                    title=f'거리 분포 ({l1_calc}) - 각 점이 개별 데이터',
+                    labels={'length1': f'거리 ({l1_calc})', 'y_jitter': '분산 (시각화용)'},
+                    hover_data=['name', 'tags']
+                )
+                # Y축 숨기기 (의미없는 축이므로)
+                fig.update_yaxes(showticklabels=False, title_text="")
 
         st.plotly_chart(fig, use_container_width=True)
+
+        # 태그 하이라이트가 활성화되어 있으면 태그 범례 표시
+        if enable_tag_highlight:
+            st.write("#### 🏷️ 태그 범례")
+
+            # 현재 데이터의 태그별 개수 계산
+            tag_counts = {}
+            for tags_str in tags_list:
+                if tags_str != '태그없음':
+                    for tag in tags_str.split(', '):
+                        tag_counts[tag] = tag_counts.get(tag, 0) + 1
+                else:
+                    tag_counts['태그없음'] = tag_counts.get('태그없음', 0) + 1
+
+            # 태그별 색상 박스와 개수 표시
+            cols = st.columns(min(4, len(tag_counts)))
+            for i, (tag, count) in enumerate(sorted(tag_counts.items())):
+                with cols[i % len(cols)]:
+                    if enable_tag_highlight:
+                        color = tag_color_map.get(tag, '#808080')
+                        # HTML을 사용해 색상 박스 표시
+                        st.markdown(
+                            f'<div style="display: flex; align-items: center;">'
+                            f'<div style="width: 20px; height: 20px; background-color: {color}; '
+                            f'border: 1px solid #ccc; margin-right: 8px; border-radius: 3px;"></div>'
+                            f'<span><strong>{tag}</strong> ({count}개)</span>'
+                            f'</div>',
+                            unsafe_allow_html=True
+                        )
+
+            # 필터링 정보 표시
+            if selected_tags:
+                st.info(f"🎯 선택된 태그: {', '.join(selected_tags)} (다른 점들은 회색으로 표시)")
+            else:
+                st.info("💡 모든 태그가 색상으로 구분되어 표시됩니다. 특정 태그를 하이라이트하려면 위에서 선택하세요.")
+
+            # 검색 결과 표시
+            if tag_search:
+                matching_tags = [tag for tag in tag_counts.keys() if tag_search.lower() in tag.lower()]
+                st.info(f"🔍 '{tag_search}' 검색 결과: {len(matching_tags)}개 태그 매치")
 
 
     with col2:
@@ -490,7 +629,34 @@ def execute_length_based_analysis(landmarks_data, l1_p1, l1_p2, l1_calc, l2_p1, 
 
     # 상세 데이터 테이블
     with st.expander("📋 상세 데이터 보기"):
-        st.dataframe(result_df, use_container_width=True)
+        # 색상 컬럼 제거 후 표시
+        display_df = result_df.drop('color', axis=1) if 'color' in result_df.columns else result_df
+        st.dataframe(display_df, use_container_width=True)
+
+        # 태그별 통계
+        if enable_tag_highlight and tags_list:
+            st.write("##### 📊 태그별 통계")
+            tag_stats = {}
+            for i, tags_str in enumerate(tags_list):
+                if tags_str != '태그없음':
+                    primary_tag = tags_str.split(', ')[0]
+                    if primary_tag not in tag_stats:
+                        tag_stats[primary_tag] = {'count': 0, 'values': []}
+                    tag_stats[primary_tag]['count'] += 1
+                    tag_stats[primary_tag]['values'].append(length1_values[i])
+
+            if tag_stats:
+                stats_data = []
+                for tag, data in tag_stats.items():
+                    stats_data.append({
+                        '태그': tag,
+                        '개수': data['count'],
+                        '평균': f"{np.mean(data['values']):.2f}",
+                        '표준편차': f"{np.std(data['values']):.2f}",
+                        '최소값': f"{np.min(data['values']):.2f}",
+                        '최대값': f"{np.max(data['values']):.2f}"
+                    })
+                st.dataframe(pd.DataFrame(stats_data), use_container_width=True)
 
 
 def calculate_length(landmarks, point1_id, point2_id, calc_type):
@@ -516,73 +682,73 @@ def calculate_length(landmarks, point1_id, point2_id, calc_type):
         return None
 
 
-def execute_landmarks_analysis(data, points, calc_type, analysis_tool):
-    """랜드마크 분석 실행"""
-    st.write("### 🔄 분석 실행 중...")
-
-    # 각 데이터에 대해 메트릭 계산
-    calculated_values = []
-    names = []
-
-    for _, row in data.iterrows():
-        value = calculate_landmarks_metric(row['landmarks'], points, calc_type)
-        if value is not None:
-            calculated_values.append(value)
-            names.append(row['name'])
-
-    if not calculated_values:
-        st.error("❌ 계산된 값이 없습니다. 점 선택이나 계산 방식을 확인해주세요.")
-        return
-
-    # 결과 DataFrame 생성
-    result_df = pd.DataFrame({
-        'name': names,
-        'value': calculated_values
-    })
-
-    # 분석 결과 표시
-    st.write("### 📊 분석 결과")
-
-    col1, col2 = st.columns([2, 1])
-
-    with col1:
-        # 시각화
-        if analysis_tool == "히스토그램":
-            fig = px.histogram(
-                result_df,
-                x='value',
-                title=f'{calc_type} 분포 (점: {points})',
-                labels={'value': calc_type, 'count': '빈도'}
-            )
-            st.plotly_chart(fig, use_container_width=True)
-
-        elif analysis_tool == "박스플롯":
-            fig = px.box(
-                result_df,
-                y='value',
-                title=f'{calc_type} 박스플롯 (점: {points})',
-                labels={'value': calc_type}
-            )
-            st.plotly_chart(fig, use_container_width=True)
-
-    with col2:
-        # 통계 정보
-        st.write("#### 📈 통계 정보")
-        st.write(f"**평균:** {np.mean(calculated_values):.4f}")
-        st.write(f"**중앙값:** {np.median(calculated_values):.4f}")
-        st.write(f"**표준편차:** {np.std(calculated_values):.4f}")
-        st.write(f"**최솟값:** {np.min(calculated_values):.4f}")
-        st.write(f"**최댓값:** {np.max(calculated_values):.4f}")
-        st.write(f"**데이터 수:** {len(calculated_values)}")
-
-        # 계산 정보
-        st.write("#### ⚙️ 계산 정보")
-        st.write(f"**선택 점:** {points}")
-        st.write(f"**계산 방식:** {calc_type}")
-
-    # 상세 데이터 테이블
-    with st.expander("📋 상세 데이터 보기"):
-        st.dataframe(result_df, use_container_width=True)
+# def execute_landmarks_analysis(data, points, calc_type, analysis_tool):
+#     """랜드마크 분석 실행 - 고급 분석 기능 (현재 미사용)"""
+#     st.write("### 🔄 분석 실행 중...")
+#
+#     # 각 데이터에 대해 메트릭 계산
+#     calculated_values = []
+#     names = []
+#
+#     for _, row in data.iterrows():
+#         value = calculate_landmarks_metric(row['landmarks'], points, calc_type)
+#         if value is not None:
+#             calculated_values.append(value)
+#             names.append(row['name'])
+#
+#     if not calculated_values:
+#         st.error("❌ 계산된 값이 없습니다. 점 선택이나 계산 방식을 확인해주세요.")
+#         return
+#
+#     # 결과 DataFrame 생성
+#     result_df = pd.DataFrame({
+#         'name': names,
+#         'value': calculated_values
+#     })
+#
+#     # 분석 결과 표시
+#     st.write("### 📊 분석 결과")
+#
+#     col1, col2 = st.columns([2, 1])
+#
+#     with col1:
+#         # 시각화
+#         if analysis_tool == "히스토그램":
+#             fig = px.histogram(
+#                 result_df,
+#                 x='value',
+#                 title=f'{calc_type} 분포 (점: {points})',
+#                 labels={'value': calc_type, 'count': '빈도'}
+#             )
+#             st.plotly_chart(fig, use_container_width=True)
+#
+#         elif analysis_tool == "박스플롯":
+#             fig = px.box(
+#                 result_df,
+#                 y='value',
+#                 title=f'{calc_type} 박스플롯 (점: {points})',
+#                 labels={'value': calc_type}
+#             )
+#             st.plotly_chart(fig, use_container_width=True)
+#
+#     with col2:
+#         # 통계 정보
+#         st.write("#### 📈 통계 정보")
+#         st.write(f"**평균:** {np.mean(calculated_values):.4f}")
+#         st.write(f"**중앙값:** {np.median(calculated_values):.4f}")
+#         st.write(f"**표준편차:** {np.std(calculated_values):.4f}")
+#         st.write(f"**최솟값:** {np.min(calculated_values):.4f}")
+#         st.write(f"**최댓값:** {np.max(calculated_values):.4f}")
+#         st.write(f"**데이터 수:** {len(calculated_values)}")
+#
+#         # 계산 정보
+#         st.write("#### ⚙️ 계산 정보")
+#         st.write(f"**선택 점:** {points}")
+#         st.write(f"**계산 방식:** {calc_type}")
+#
+#     # 상세 데이터 테이블
+#     with st.expander("📋 상세 데이터 보기"):
+#         st.dataframe(result_df, use_container_width=True)
 
 
 
