@@ -41,6 +41,11 @@ def get_tag_groups():
         "2차 - 품격": ['고급스러운', '생기있는'],
         "2차 - 시대감": ['현대적인','고전적인'],
         "2차 - 신뢰감": ['믿음직한','날티나는'],
+        "3차 - 이마": ['forehead-길이-길어', 'forehead-길이-짧아', 'forehead-좌우-넓어', 'forehead-좌우-좁아'],
+        "3차 - 눈썹": ['eyebrow-형태-공격형', 'eyebrow-형태-아치형', 'eyebrow-형태-처진형', 'eyebrow-곡률-심해', 'eyebrow-곡률-적당', 'eyebrow-곡률-직선', 'eyebrow-길이-길어', 'eyebrow-길이-짧아', 'eyebrow-숱-진해', 'eyebrow-숱-적당', 'eyebrow-숱-없어'],
+        "3차 - 눈": ['eye-크기-크다', 'eye-크기-작다', 'eye-형태-둥글다', 'eye-형태-길다', 'eye-형태-올라갔다'],
+        "3차 - 코": ['nose-높이-높다', 'nose-높이-낮다', 'nose-크기-크다', 'nose-크기-작다'],
+        "3차 - 입": ['mouth-크기-크다', 'mouth-크기-작다', 'mouth-입술-두껍다', 'mouth-입술-얇다'],
         "3차 - 직업연상": ['의사상', '교사상', '예술가상', '운동선수상', '연예인상'],
     }
 
@@ -265,8 +270,17 @@ def render_tag_analysis_tab(landmarks_data):
 
     tag_lists = landmarks_data['tags'].dropna().tolist()
 
-    # 모든 고유 태그 추출
-    all_unique_tags = sorted(list(set(tag for sublist in tag_lists for tag in sublist if isinstance(sublist, list))))
+    # 모든 고유 태그 추출 (데이터 + 정의된 태그 그룹)
+    data_tags = set(tag for sublist in tag_lists for tag in sublist if isinstance(sublist, list))
+
+    # get_tag_groups()에서 정의된 모든 태그 추가
+    tag_groups = get_tag_groups()
+    defined_tags = set()
+    for tags in tag_groups.values():
+        defined_tags.update(tags)
+
+    # 데이터의 태그와 정의된 태그 합치기
+    all_unique_tags = sorted(list(data_tags.union(defined_tags)))
 
     col1, col2 = st.columns([1, 1])
     with col1:
@@ -276,11 +290,65 @@ def render_tag_analysis_tab(landmarks_data):
 
     with col2:
         st.subheader("🔍 태그 필터")
-        filter_tags = st.multiselect(
-            "특정 태그가 모두 포함된 데이터만 분석:",
-            options=all_unique_tags,
-            help="선택한 모든 태그가 포함된 데이터만으로 분석합니다 (AND 조건)"
+
+        # 태그 선택 방식 선택
+        filter_selection_mode = st.radio(
+            "태그 선택 방식:",
+            ["🎯 3단계 선택", "📋 전체 목록"],
+            key="filter_selection_mode"
         )
+
+        filter_tags = []
+
+        if filter_selection_mode == "📋 전체 목록":
+            filter_tags = st.multiselect(
+                "특정 태그가 모두 포함된 데이터만 분석:",
+                options=all_unique_tags,
+                help="선택한 모든 태그가 포함된 데이터만으로 분석합니다 (AND 조건)"
+            )
+        else:
+            # 3단계 선택
+            # 1차 태그들
+            primary_tags = []
+            for category, tags in tag_groups.items():
+                if '1차' in category:
+                    primary_tags.extend(tags)
+
+            if primary_tags:
+                primary_selected = st.multiselect(
+                    "🥇 1차 태그:",
+                    sorted(primary_tags),
+                    key="filter_primary"
+                )
+                filter_tags.extend(primary_selected)
+
+            # 2차 태그들
+            secondary_tags = []
+            for category, tags in tag_groups.items():
+                if '2차' in category:
+                    secondary_tags.extend(tags)
+
+            if secondary_tags:
+                secondary_selected = st.multiselect(
+                    "🥈 2차 태그:",
+                    sorted(secondary_tags),
+                    key="filter_secondary"
+                )
+                filter_tags.extend(secondary_selected)
+
+            # 3차 태그들
+            tertiary_tags = []
+            for category, tags in tag_groups.items():
+                if '3차' in category:
+                    tertiary_tags.extend(tags)
+
+            if tertiary_tags:
+                tertiary_selected = st.multiselect(
+                    "🥉 3차 태그:",
+                    sorted(tertiary_tags),
+                    key="filter_tertiary"
+                )
+                filter_tags.extend(tertiary_selected)
 
     # 태그 그룹 정보 및 역방향 매핑 생성
     tag_groups = get_tag_groups()
