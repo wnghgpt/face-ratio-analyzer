@@ -10,6 +10,8 @@ import plotly.graph_objects as go
 import json
 import numpy as np
 from pathlib import Path
+from collections import Counter
+from itertools import combinations
 
 # Database and engines
 from database.db_manager import db_manager
@@ -21,21 +23,48 @@ st.set_page_config(
     layout="wide"
 )
 
+def get_tag_groups():
+    """태그 그룹 정보를 반환합니다."""
+    return {
+        "1차 - 동물상": ['강아지','고양이','다람쥐','참새','사슴'],
+        "1차 - 지역감": ['이국적인','동양적인'],
+        "1차 - 성별감": ['남성적','중성적','여성스런'],
+        "1차 - 매력": ['귀여운', '청순한', '섹시한'],
+        "1차 - 연령감": ['동안의', '성숙한'],
+        "1차 - 화려함": ['화려한','수수한'],
+        "1차 - 온도감": ['차가운','따뜻한'],
+        "1차 - 성격": ['지적인','발랄한'],
+        "1차 - 인상": ['날카로운','부드러운'],
+        "1차 - 얼굴형": ['시원시원한','두부상'],
+        "1차 - 성향": ['고집있는','서글서글한'],
+        "2차 - 분위기": ['세련된', '친근한'],
+        "2차 - 품격": ['고급스러운', '생기있는'],
+        "2차 - 시대감": ['현대적인','고전적인'],
+        "2차 - 신뢰감": ['믿음직한','날티나는'],
+        "3차 - 직업연상": ['의사상', '교사상', '예술가상', '운동선수상', '연예인상'],
+    }
+
 def main():
     st.title("🎭 Face Coordinate Analyzer")
     st.markdown("**실시간 좌표 계산 기반 얼굴 분석 플랫폼**")
 
-    # 좌표 분석만 렌더링
-    render_landmarks_analysis_tab()
+    # 랜드마크 데이터 로드
+    landmarks_data = load_landmarks_data()
 
+    # 탭 생성
+    tab1, tab2 = st.tabs(["🧮 좌표 분석", "🔗 태그 연관성 분석"])
 
-def render_landmarks_analysis_tab():
-    """새로운 좌표 분석 탭 - 길이 기반 단순화 버전"""
+    with tab1:
+        render_landmarks_analysis_tab(landmarks_data)
+    
+    with tab2:
+        render_tag_analysis_tab(landmarks_data)
+
+def render_landmarks_analysis_tab(landmarks_data):
+    """좌표 분석 탭 렌더링"""
     st.header("🧮 좌표 분석 (실시간 계산)")
     st.markdown("두 거리를 기반으로 한 비교 분석")
 
-    # 랜드마크 데이터 로드
-    landmarks_data = load_landmarks_data()
     if landmarks_data.empty:
         st.warning("💡 landmarks가 포함된 JSON 파일이 필요합니다.")
         return
@@ -139,32 +168,13 @@ def render_landmarks_analysis_tab():
                 all_tags.update(tags)
 
         if all_tags:
-            # 태그 그룹 정의 (TagSelector.jsx 기반 + 3차 추가)
-            tag_groups = {
-                "1차 - 동물상": ['강아지','고양이','다람쥐','참새','사슴'],
-                "1차 - 지역감": ['이국적인','동양적인'],
-                "1차 - 성별감": ['남성적','중성적','여성스런'],
-                "1차 - 매력": ['귀여운', '청순한', '섹시한'],
-                "1차 - 연령감": ['동안의', '성숙한'],
-                "1차 - 화려함": ['화려한','수수한'],
-                "1차 - 온도감": ['차가운','따뜻한'],
-                "1차 - 성격": ['지적인','발랄한'],
-                "1차 - 인상": ['날카로운','부드러운'],
-                "1차 - 얼굴형": ['시원시원한','두부상'],
-                "1차 - 성향": ['고집있는','서글서글한'],
-                "2차 - 분위기": ['세련된', '친근한'],
-                "2차 - 품격": ['고급스러운', '생기있는'],
-                "2차 - 시대감": ['현대적인','고전적인'],
-                "2차 - 신뢰감": ['믿음직한','날티나는'],
-                # 3차 태그 (가설 태그) 추가
-                "3차 - 직업연상": ['의사상', '교사상', '예술가상', '운동선수상', '연예인상'],
-            }
+            tag_groups = get_tag_groups()
 
             # 태그 선택 방식 선택
             selection_mode = st.sidebar.radio(
                 "태그 선택 방식:",
-                ["📋 전체 목록", "🎯 3단계 선택"],
-                help="전체 목록: 모든 태그 한 번에 보기\n3단계 선택: 1차→2차→3차로 나누어 선택"
+                ["🎯 3단계 선택", "📋 전체 목록"],
+                help="3단계 선택: 1차→2차→3차로 나누어 선택\n전체 목록: 모든 태그 한 번에 보기"
             )
 
             if selection_mode == "📋 전체 목록":
@@ -244,6 +254,194 @@ def render_landmarks_analysis_tab():
             selected_tags
         )
 
+def render_tag_analysis_tab(landmarks_data):
+    """태그 연관성 분석 탭 렌더링"""
+    st.header("🔗 태그 연관성 분석")
+    st.markdown("데이터에 포함된 태그들의 동시 출현 빈도를 분석합니다.")
+
+    if landmarks_data.empty or 'tags' not in landmarks_data.columns:
+        st.warning("태그 데이터가 포함된 파일이 필요합니다.")
+        return
+
+    tag_lists = landmarks_data['tags'].dropna().tolist()
+
+    # 모든 고유 태그 추출
+    all_unique_tags = sorted(list(set(tag for sublist in tag_lists for tag in sublist if isinstance(sublist, list))))
+
+    col1, col2 = st.columns([1, 1])
+    with col1:
+        st.subheader("📊 분석 설정")
+        itemset_size = st.number_input("분석할 태그 조합 개수", min_value=2, max_value=5, value=2)
+        top_n = st.slider("상위 몇 개를 보시겠습니까?", min_value=5, max_value=50, value=20)
+
+    with col2:
+        st.subheader("🔍 태그 필터")
+        filter_tags = st.multiselect(
+            "특정 태그가 모두 포함된 데이터만 분석:",
+            options=all_unique_tags,
+            help="선택한 모든 태그가 포함된 데이터만으로 분석합니다 (AND 조건)"
+        )
+
+    # 태그 그룹 정보 및 역방향 매핑 생성
+    tag_groups = get_tag_groups()
+    tag_to_category = {}
+    for category, tags in tag_groups.items():
+        cat_level = category.split(' ')[0]
+        for tag in tags:
+            tag_to_category[tag] = cat_level
+
+    def format_combination_label(combination):
+        parts = {'1차': [], '2차': [], '3차': []}
+        for tag in combination:
+            category_level = tag_to_category.get(tag, '기타').split('-')[0]
+            if '1차' in category_level:
+                parts['1차'].append(tag)
+            elif '2차' in category_level:
+                parts['2차'].append(tag)
+            elif '3차' in category_level:
+                parts['3차'].append(tag)
+        
+        label_parts = []
+        for level in ['1차', '2차', '3차']:
+            if parts[level]:
+                label_parts.append(', '.join(parts[level]))
+            else:
+                label_parts.append('..')
+        return ' / '.join(label_parts)
+
+    # 태그 필터링 적용
+    if filter_tags:
+        # 선택된 태그가 모두 포함된 데이터만 필터링
+        filtered_tag_lists = []
+        for tags in tag_lists:
+            if isinstance(tags, list) and all(filter_tag in tags for filter_tag in filter_tags):
+                filtered_tag_lists.append(tags)
+        tag_lists = filtered_tag_lists
+
+        if not tag_lists:
+            st.warning(f"선택된 모든 태그({', '.join(filter_tags)})가 포함된 데이터가 없습니다.")
+            return
+
+    # 조합 계산
+    all_combinations = []
+    for tags in tag_lists:
+        if isinstance(tags, list) and len(tags) >= itemset_size:
+            combinations_from_tags = list(combinations(sorted(tags), itemset_size))
+
+            # 필터 태그가 선택된 경우, 조합에도 모든 필터 태그가 포함된 것만 추가
+            if filter_tags:
+                for combo in combinations_from_tags:
+                    if all(filter_tag in combo for filter_tag in filter_tags):
+                        all_combinations.append(combo)
+            else:
+                all_combinations.extend(combinations_from_tags)
+
+    if not all_combinations:
+        st.warning(f"{itemset_size}개 이상의 태그를 가진 데이터가 없습니다.")
+        return
+
+    combination_counts = Counter(all_combinations)
+    most_common_combinations = combination_counts.most_common(top_n)
+
+    # 조합별 파일 리스트 생성
+    combination_files = {}
+    for tags in tag_lists:
+        if isinstance(tags, list) and len(tags) >= itemset_size:
+            combinations_from_tags = list(combinations(sorted(tags), itemset_size))
+
+            # 해당 태그 리스트가 어떤 파일인지 찾기
+            file_name = None
+            for idx, row_tags in enumerate(landmarks_data['tags'].dropna().tolist()):
+                if isinstance(row_tags, list) and row_tags == tags:
+                    file_name = landmarks_data.iloc[idx]['name'] if 'name' in landmarks_data.columns else f"파일_{idx+1}"
+                    break
+
+            for combo in combinations_from_tags:
+                if filter_tags and not all(filter_tag in combo for filter_tag in filter_tags):
+                    continue
+                if combo not in combination_files:
+                    combination_files[combo] = []
+                if file_name:
+                    combination_files[combo].append(file_name)
+
+    # 막대 그래프 시각화
+    filter_info = f" (필터: {', '.join(filter_tags)})" if filter_tags else ""
+    st.subheader(f"가장 자주 함께 사용된 태그 조합 (상위 {top_n}개){filter_info}")
+    if most_common_combinations:
+        comb_df = pd.DataFrame(most_common_combinations, columns=['combination', 'count'])
+        comb_df['combination_str'] = comb_df['combination'].apply(format_combination_label)
+
+        # 파일 리스트 추가
+        comb_df['files'] = comb_df['combination'].apply(lambda combo:
+            ', '.join(combination_files.get(combo, [])[:5]) +
+            (f' 외 {len(combination_files.get(combo, []))-5}개' if len(combination_files.get(combo, [])) > 5 else '')
+        )
+
+        fig = px.bar(
+            comb_df,
+            x='count',
+            y='combination_str',
+            orientation='h',
+            title=f'{itemset_size}개 태그 조합의 동시 출현 빈도',
+            labels={'count': '빈도', 'combination_str': '태그 조합'},
+            hover_data={'files': True}
+        )
+        fig.update_layout(yaxis={'categoryorder':'total ascending'})
+
+        # 호버 템플릿 커스터마이징
+        fig.update_traces(
+            hovertemplate="<b>%{y}</b><br>" +
+                         "빈도: %{x}<br>" +
+                         "파일: %{customdata[0]}<br>" +
+                         "<extra></extra>",
+            customdata=comb_df[['files']].values
+        )
+
+        st.plotly_chart(fig, use_container_width=True)
+
+        # 각 태그 조합별 구성 파일 상세 표시
+        st.subheader("📋 각 조합별 구성 파일 목록")
+        for combo, count in most_common_combinations:
+            combo_label = format_combination_label(combo)
+            files = combination_files.get(combo, [])
+
+            with st.expander(f"**{combo_label}** ({count}개 파일)", expanded=False):
+                if files:
+                    # 파일 리스트를 데이터프레임으로 표시
+                    files_df = pd.DataFrame({'파일명': files})
+                    files_df.index = files_df.index + 1  # 1부터 시작하는 인덱스
+                    st.dataframe(files_df, use_container_width=True)
+                else:
+                    st.info("해당 조합의 파일이 없습니다.")
+    else:
+        st.info("표시할 데이터가 없습니다.")
+
+    # 히트맵 시각화 (2개 조합일 때만)
+    if itemset_size == 2:
+        st.subheader(f"태그 동시 출현 빈도 히트맵{filter_info}")
+
+        all_unique_tags_heatmap = sorted(list(set(tag for sublist in tag_lists for tag in sublist)))
+        
+        heatmap_df = pd.DataFrame(0, index=all_unique_tags_heatmap, columns=all_unique_tags_heatmap)
+
+        for combo, count in combination_counts.items():
+            tag1, tag2 = combo
+            heatmap_df.loc[tag1, tag2] = count
+            heatmap_df.loc[tag2, tag1] = count
+        
+        np.fill_diagonal(heatmap_df.values, 0)
+
+        if not heatmap_df.empty:
+            fig_heatmap = px.imshow(
+                heatmap_df,
+                title="태그 동시 출현 빈도 히트맵",
+                labels=dict(x="태그", y="태그", color="빈도"),
+                color_continuous_scale="Blues"
+            )
+            fig_heatmap.update_xaxes(side="bottom")
+            st.plotly_chart(fig_heatmap, use_container_width=True)
+        else:
+            st.info("히트맵을 생성할 데이터가 없습니다.")
 
 def load_landmarks_data():
     """데이터베이스와 JSON 파일에서 랜드마크 데이터 로드"""
@@ -287,7 +485,6 @@ def load_landmarks_data():
         landmarks_data = landmarks_data[landmarks_data['landmarks'].apply(lambda x: x != '[]' and (isinstance(x, list) and len(x) > 0))]
 
     return landmarks_data
-
 
 
 def calculate_landmarks_metric(landmarks, points, calc_type):
@@ -764,32 +961,32 @@ def calculate_length(landmarks, point1_id, point2_id, calc_type):
 # def execute_landmarks_analysis(data, points, calc_type, analysis_tool):
 #     """랜드마크 분석 실행 - 고급 분석 기능 (현재 미사용)"""
 #     st.write("### 🔄 분석 실행 중...")
-#
+# 
 #     # 각 데이터에 대해 메트릭 계산
 #     calculated_values = []
 #     names = []
-#
+# 
 #     for _, row in data.iterrows():
 #         value = calculate_landmarks_metric(row['landmarks'], points, calc_type)
 #         if value is not None:
 #             calculated_values.append(value)
 #             names.append(row['name'])
-#
+# 
 #     if not calculated_values:
 #         st.error("❌ 계산된 값이 없습니다. 점 선택이나 계산 방식을 확인해주세요.")
 #         return
-#
+# 
 #     # 결과 DataFrame 생성
 #     result_df = pd.DataFrame({
 #         'name': names,
 #         'value': calculated_values
 #     })
-#
+# 
 #     # 분석 결과 표시
 #     st.write("### 📊 분석 결과")
-#
+# 
 #     col1, col2 = st.columns([2, 1])
-#
+# 
 #     with col1:
 #         # 시각화
 #         if analysis_tool == "히스토그램":
@@ -800,7 +997,7 @@ def calculate_length(landmarks, point1_id, point2_id, calc_type):
 #                 labels={'value': calc_type, 'count': '빈도'}
 #             )
 #             st.plotly_chart(fig, use_container_width=True)
-#
+# 
 #         elif analysis_tool == "박스플롯":
 #             fig = px.box(
 #                 result_df,
@@ -809,7 +1006,7 @@ def calculate_length(landmarks, point1_id, point2_id, calc_type):
 #                 labels={'value': calc_type}
 #             )
 #             st.plotly_chart(fig, use_container_width=True)
-#
+# 
 #     with col2:
 #         # 통계 정보
 #         st.write("#### 📈 통계 정보")
@@ -819,16 +1016,15 @@ def calculate_length(landmarks, point1_id, point2_id, calc_type):
 #         st.write(f"**최솟값:** {np.min(calculated_values):.4f}")
 #         st.write(f"**최댓값:** {np.max(calculated_values):.4f}")
 #         st.write(f"**데이터 수:** {len(calculated_values)}")
-#
+# 
 #         # 계산 정보
 #         st.write("#### ⚙️ 계산 정보")
 #         st.write(f"**선택 점:** {points}")
 #         st.write(f"**계산 방식:** {calc_type}")
-#
+# 
 #     # 상세 데이터 테이블
 #     with st.expander("📋 상세 데이터 보기"):
 #         st.dataframe(result_df, use_container_width=True)
-
 
 
 
