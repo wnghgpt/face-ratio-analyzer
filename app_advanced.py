@@ -125,46 +125,111 @@ def render_landmarks_analysis_tab():
         swap_axes = st.sidebar.checkbox("🔄 X축과 Y축 바꾸기",
                                       help="길이1과 길이2의 축을 서로 바꿔서 표시합니다.")
 
-    # 5. 태그 하이라이트 옵션
+    # 5. 태그 하이라이트 옵션 (항상 활성화)
     st.sidebar.write("### 🎨 태그 하이라이트")
-    enable_tag_highlight = st.sidebar.checkbox("태그별 색상 구분", help="각 태그별로 다른 색상으로 점을 표시합니다.")
     selected_tags = []
-    tag_search = ""
 
-    if enable_tag_highlight:
-        # 모든 태그 수집 (데이터가 있을 때만)
-        try:
-            all_tags = set()
-            for _, row in landmarks_data.iterrows():
-                if 'tags' in row and row['tags']:
-                    tags = row['tags'] if isinstance(row['tags'], list) else []
-                    all_tags.update(tags)
+    # 태그 하이라이트 항상 활성화
+    # 모든 태그 수집 (데이터가 있을 때만)
+    try:
+        all_tags = set()
+        for _, row in landmarks_data.iterrows():
+            if 'tags' in row and row['tags']:
+                tags = row['tags'] if isinstance(row['tags'], list) else []
+                all_tags.update(tags)
 
-            if all_tags:
-                # 태그 검색 기능
-                tag_search = st.sidebar.text_input(
-                    "🔍 태그 검색:",
-                    help="검색어가 포함된 태그만 표시합니다."
-                )
+        if all_tags:
+            # 태그 그룹 정의 (TagSelector.jsx 기반 + 3차 추가)
+            tag_groups = {
+                "1차 - 동물상": ['강아지','고양이','다람쥐','참새','사슴'],
+                "1차 - 지역감": ['이국적인','동양적인'],
+                "1차 - 성별감": ['남성적','중성적','여성스런'],
+                "1차 - 매력": ['귀여운', '청순한', '섹시한'],
+                "1차 - 연령감": ['동안의', '성숙한'],
+                "1차 - 화려함": ['화려한','수수한'],
+                "1차 - 온도감": ['차가운','따뜻한'],
+                "1차 - 성격": ['지적인','발랄한'],
+                "1차 - 인상": ['날카로운','부드러운'],
+                "1차 - 얼굴형": ['시원시원한','두부상'],
+                "1차 - 성향": ['고집있는','서글서글한'],
+                "2차 - 분위기": ['세련된', '친근한'],
+                "2차 - 품격": ['고급스러운', '생기있는'],
+                "2차 - 시대감": ['현대적인','고전적인'],
+                "2차 - 신뢰감": ['믿음직한','날티나는'],
+                # 3차 태그 (가설 태그) 추가
+                "3차 - 직업연상": ['의사상', '교사상', '예술가상', '운동선수상', '연예인상'],
+            }
 
-                # 검색 결과 필터링
-                filtered_tags = [tag for tag in sorted(all_tags) if tag_search.lower() in tag.lower()] if tag_search else sorted(all_tags)
+            # 태그 선택 방식 선택
+            selection_mode = st.sidebar.radio(
+                "태그 선택 방식:",
+                ["📋 전체 목록", "🎯 3단계 선택"],
+                help="전체 목록: 모든 태그 한 번에 보기\n3단계 선택: 1차→2차→3차로 나누어 선택"
+            )
 
+            if selection_mode == "📋 전체 목록":
+                # 전체 태그 목록
                 selected_tags = st.sidebar.multiselect(
                     "🎯 하이라이트할 태그들:",
-                    filtered_tags,
-                    help="여러 태그를 선택하면 각각 다른 색상으로 표시됩니다. 아무것도 선택하지 않으면 전체 태그가 색상으로 구분됩니다."
+                    sorted(all_tags),
+                    help="선택한 태그만 색상으로 강조됩니다."
                 )
+            else:
+                # 3단계 선택
+                selected_tags = []
 
-                # 태그 리스트 표시
-                if len(all_tags) > 0:
-                    st.sidebar.write(f"📋 **총 {len(all_tags)}개 태그**")
-                    with st.sidebar.expander("태그 목록 보기"):
-                        for tag in sorted(all_tags):
-                            if not tag_search or tag_search.lower() in tag.lower():
-                                st.write(f"• {tag}")
-        except:
-            st.sidebar.info("태그 데이터를 불러올 수 없습니다.")
+                # 1차 태그들 (기본 특성)
+                primary_tags = []
+                for group_name, group_tags in tag_groups.items():
+                    if group_name.startswith("1차"):
+                        available_tags = [tag for tag in group_tags if tag in all_tags]
+                        primary_tags.extend(available_tags)
+
+                if primary_tags:
+                    primary_selected = st.sidebar.multiselect(
+                        "🎭 1차 태그 (기본 특성):",
+                        sorted(primary_tags),
+                        key="primary_tags"
+                    )
+                    selected_tags.extend(primary_selected)
+
+                # 2차 태그들 (세부 스타일)
+                secondary_tags = []
+                for group_name, group_tags in tag_groups.items():
+                    if group_name.startswith("2차"):
+                        available_tags = [tag for tag in group_tags if tag in all_tags]
+                        secondary_tags.extend(available_tags)
+
+                if secondary_tags:
+                    secondary_selected = st.sidebar.multiselect(
+                        "✨ 2차 태그 (세부 스타일):",
+                        sorted(secondary_tags),
+                        key="secondary_tags"
+                    )
+                    selected_tags.extend(secondary_selected)
+
+                # 3차 태그들 (가설/실험) - 데이터 존재 여부 무관
+                tertiary_tags = []
+                for group_name, group_tags in tag_groups.items():
+                    if group_name.startswith("3차"):
+                        tertiary_tags.extend(group_tags)
+
+                if tertiary_tags:
+                    tertiary_selected = st.sidebar.multiselect(
+                        "🔬 3차 태그 (가설/실험):",
+                        sorted(tertiary_tags),
+                        key="tertiary_tags"
+                    )
+                    selected_tags.extend(tertiary_selected)
+
+            # 선택된 태그 수 표시
+            if selected_tags:
+                st.sidebar.success(f"✅ {len(selected_tags)}개 태그 선택됨")
+            else:
+                st.sidebar.info(f"📋 총 {len(all_tags)}개 태그 사용 가능")
+
+    except Exception as e:
+        st.sidebar.error(f"태그 데이터 로딩 오류: {e}")
 
     # 6. 분석 실행
     if st.sidebar.button("🚀 분석 실행"):
@@ -175,25 +240,53 @@ def render_landmarks_analysis_tab():
             purpose,
             normalize_ratio,
             swap_axes,
-            enable_tag_highlight,
-            selected_tags,
-            tag_search
+            True,  # enable_tag_highlight 항상 True
+            selected_tags
         )
 
 
 def load_landmarks_data():
-    """데이터베이스에서 랜드마크 데이터 로드"""
-    data = db_manager.get_dataframe()
+    """데이터베이스와 JSON 파일에서 랜드마크 데이터 로드"""
+    # 1. 데이터베이스에서 데이터 로드
+    db_data = db_manager.get_dataframe()
+
+    # 2. json_files 디렉토리에서 JSON 파일 로드
+    json_files_path = Path("json_files")
+    json_data_list = []
+    if json_files_path.exists():
+        for file_path in json_files_path.glob("*.json"):
+            try:
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    json_data = json.load(f)
+                    # 'landmarks' 데이터가 문자열이면 파싱
+                    if isinstance(json_data.get('landmarks'), str):
+                        json_data['landmarks'] = json.loads(json_data['landmarks'])
+                    json_data_list.append(json_data)
+            except Exception as e:
+                st.error(f"'{file_path.name}' 파일 로딩 오류: {e}")
+
+    json_df = pd.DataFrame(json_data_list)
+
+    # 3. 데이터 병합
+    if not json_df.empty:
+        # DB 데이터와 JSON 데이터를 합치고, 'name'을 기준으로 중복 제거 (JSON 파일 우선)
+        combined_data = pd.concat([db_data, json_df], ignore_index=True)
+        combined_data.drop_duplicates(subset=['name'], keep='last', inplace=True)
+    else:
+        combined_data = db_data
 
     # 데이터가 비어있거나 landmarks 컬럼이 없으면 빈 DataFrame 반환
-    if data.empty or 'landmarks' not in data.columns:
+    if combined_data.empty or 'landmarks' not in combined_data.columns:
         return pd.DataFrame()
 
     # landmarks 컬럼이 있고 비어있지 않은 데이터만 필터링
-    landmarks_data = data[data['landmarks'].notna() & (data['landmarks'] != '[]')]
+    landmarks_data = combined_data[combined_data['landmarks'].notna()]
+    
+    # landmarks 데이터가 문자열 '[]'인 경우 필터링
+    if not landmarks_data.empty:
+        landmarks_data = landmarks_data[landmarks_data['landmarks'].apply(lambda x: x != '[]' and (isinstance(x, list) and len(x) > 0))]
+
     return landmarks_data
-
-
 
 
 
@@ -345,7 +438,7 @@ def calculate_landmarks_metric(landmarks, points, calc_type):
         return None
 
 
-def execute_length_based_analysis(landmarks_data, l1_p1, l1_p2, l1_calc, l2_p1, l2_p2, l2_calc, purpose, normalize_ratio=False, swap_axes=False, enable_tag_highlight=False, selected_tags=None, tag_search=""):
+def execute_length_based_analysis(landmarks_data, l1_p1, l1_p2, l1_calc, l2_p1, l2_p2, l2_calc, purpose, normalize_ratio=False, swap_axes=False, enable_tag_highlight=False, selected_tags=None):
     """길이 기반 분석 실행"""
     if selected_tags is None:
         selected_tags = []
@@ -385,21 +478,16 @@ def execute_length_based_analysis(landmarks_data, l1_p1, l1_p2, l1_calc, l2_p1, 
             length2 = calculate_length(landmarks, l2_p1, l2_p2, l2_calc)
 
             if length1 is not None and length2 is not None:
-                if purpose == "⚖️ 비율 계산":
-                    # 비율인 경우 길이1/길이2
-                    final_length1 = length1 / length2 if length2 != 0 else 0
-                    final_length2 = length2
-                else:
-                    # 거리 측정인 경우 그대로 사용
-                    final_length1 = length1
-                    final_length2 = length2
+                final_length1 = length1
+                final_length2 = length2
 
                 # 정규화 적용 (비율 계산이고 normalize_ratio가 True일 때)
                 if purpose == "⚖️ 비율 계산" and normalize_ratio and final_length1 != 0:
                     # X축(길이1)을 1로 고정하고 Y축(길이2)을 비례적으로 스케일링
                     scale_factor = final_length1
                     final_length1 = 1.0
-                    final_length2 = final_length2 / scale_factor
+                    final_length2 = final_length2 / scale_factor if scale_factor != 0 else 0
+
 
                 # 소수점 둘째자리까지 반올림
                 final_length1 = round(final_length1, 2)
@@ -411,24 +499,19 @@ def execute_length_based_analysis(landmarks_data, l1_p1, l1_p2, l1_calc, l2_p1, 
                     row_tags = row['tags'] if isinstance(row['tags'], list) else []
 
                 # 색상 결정
-                if enable_tag_highlight:
-                    if selected_tags:
-                        # 특정 태그들이 선택된 경우
-                        matching_tags = [tag for tag in selected_tags if tag in row_tags]
-                        if matching_tags:
-                            # 선택된 태그 중 첫 번째 매칭되는 태그의 색상 사용
-                            color = tag_color_map.get(matching_tags[0], '#FF0000')
-                            opacity = 1.0
-                        else:
-                            color = '#666666'  # 진한 회색으로 dimmed
-                            opacity = 0.8
-                    else:
-                        # 아무것도 선택하지 않으면 전체 태그 색상 구분
-                        primary_tag = row_tags[0] if row_tags else '기타'
-                        color = tag_color_map.get(primary_tag, '#808080')
+                if enable_tag_highlight and selected_tags:
+                    # 특정 태그들이 선택된 경우에만 색상 적용
+                    matching_tags = [tag for tag in selected_tags if tag in row_tags]
+                    if matching_tags:
+                        # 선택된 태그 중 첫 번째 매칭되는 태그의 색상 사용
+                        color = tag_color_map.get(matching_tags[0], '#FF0000')
                         opacity = 1.0
+                    else:
+                        color = '#808080'  # 회색으로 dimmed
+                        opacity = 0.6
                 else:
-                    color = '#1f77b4'  # 기본 plotly 색상
+                    # 기본 회색 (태그 하이라이트 비활성화 또는 태그 미선택 시)
+                    color = '#808080'  # 회색
                     opacity = 1.0
 
                 length1_values.append(final_length1)
@@ -600,14 +683,10 @@ def execute_length_based_analysis(landmarks_data, l1_p1, l1_p2, l1_calc, l2_p1, 
 
             # 필터링 정보 표시
             if selected_tags:
-                st.info(f"🎯 선택된 태그: {', '.join(selected_tags)} (다른 점들은 회색으로 표시)")
+                st.info(f"🎯 선택된 태그: {', '.join(selected_tags)} (선택된 태그만 색상으로 표시)")
             else:
-                st.info("💡 모든 태그가 색상으로 구분되어 표시됩니다. 특정 태그를 하이라이트하려면 위에서 선택하세요.")
+                st.info("💡 모든 점이 회색으로 표시됩니다. 특정 태그를 색상으로 하이라이트하려면 위에서 선택하세요.")
 
-            # 검색 결과 표시
-            if tag_search:
-                matching_tags = [tag for tag in tag_counts.keys() if tag_search.lower() in tag.lower()]
-                st.info(f"🔍 '{tag_search}' 검색 결과: {len(matching_tags)}개 태그 매치")
 
 
     with col2:
