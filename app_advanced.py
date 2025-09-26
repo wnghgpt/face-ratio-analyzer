@@ -26,6 +26,10 @@ st.set_page_config(
 def get_tag_groups():
     """태그 그룹 정보를 반환합니다."""
     return {
+        "추상 - 분위기": ['세련된', '친근한'],
+        "추상 - 품격": ['고급스러운', '생기있는'],
+        "추상 - 시대감": ['현대적인','고전적인'],
+        "추상 - 신뢰감": ['믿음직한','날티나는'],
         "1차 - 동물상": ['강아지','고양이','다람쥐','참새','사슴'],
         "1차 - 지역감": ['이국적인','동양적인'],
         "1차 - 성별감": ['남성적','중성적','여성스런'],
@@ -37,33 +41,36 @@ def get_tag_groups():
         "1차 - 인상": ['날카로운','부드러운'],
         "1차 - 얼굴형": ['시원시원한','두부상'],
         "1차 - 성향": ['고집있는','서글서글한'],
-        "2차 - 분위기": ['세련된', '친근한'],
-        "2차 - 품격": ['고급스러운', '생기있는'],
-        "2차 - 시대감": ['현대적인','고전적인'],
-        "2차 - 신뢰감": ['믿음직한','날티나는'],
-        "3차 - 이마": ['forehead-길이-길어', 'forehead-길이-짧아', 'forehead-좌우-넓어', 'forehead-좌우-좁아'],
-        "3차 - 눈썹": ['eyebrow-형태-공격형', 'eyebrow-형태-아치형', 'eyebrow-형태-처진형', 'eyebrow-곡률-심해', 'eyebrow-곡률-적당', 'eyebrow-곡률-직선', 'eyebrow-길이-길어', 'eyebrow-길이-짧아', 'eyebrow-숱-진해', 'eyebrow-숱-적당', 'eyebrow-숱-없어'],
-        "3차 - 눈": ['eye-크기-크다', 'eye-크기-작다', 'eye-형태-둥글다', 'eye-형태-길다', 'eye-형태-올라갔다'],
-        "3차 - 코": ['nose-높이-높다', 'nose-높이-낮다', 'nose-크기-크다', 'nose-크기-작다'],
-        "3차 - 입": ['mouth-크기-크다', 'mouth-크기-작다', 'mouth-입술-두껍다', 'mouth-입술-얇다'],
-        "3차 - 직업연상": ['의사상', '교사상', '예술가상', '운동선수상', '연예인상'],
+        "2차 - 이마": ['forehead-길이-길어', 'forehead-길이-짧아', 'forehead-좌우-넓어', 'forehead-좌우-좁아', 'forehead-높이-긴', 'forehead-높이-짧은', 'forehead-너비-넓은', 'forehead-너비-보통', 'forehead-너비-좁은'],
+        "2차 - 눈썹": ['eyebrow-형태-공격형', 'eyebrow-형태-아치형', 'eyebrow-형태-처진형', 'eyebrow-곡률-심해', 'eyebrow-곡률-적당', 'eyebrow-곡률-직선', 'eyebrow-길이-길어', 'eyebrow-길이-짧아', 'eyebrow-숱-진해', 'eyebrow-숱-적당', 'eyebrow-숱-없어', 'eyebrow-눈과의거리-보통', 'eyebrow-형태-처진', 'eyebrow-곡률-보통', 'eyebrow-두께-보통', 'eyebrow-숱-흐린'],
+        "2차 - 눈": ['eye-크기-크다', 'eye-크기-작다', 'eye-형태-둥글다', 'eye-형태-길다', 'eye-형태-올라갔다', 'eye-인상-똘망똘망한', 'eye-미간-보통', 'eye-모양-찢어진', 'eye-높이-보통', 'eye-쌍꺼풀-아웃', 'eye-동공-반가려짐'],
+        "2차 - 코": ['nose-높이-높다', 'nose-높이-낮다', 'nose-크기-크다', 'nose-크기-작다'],
+        "2차 - 입": ['mouth-크기-크다', 'mouth-크기-작다', 'mouth-입술-두껍다', 'mouth-입술-얇다'],
+        "2차 - 직업연상": ['의사상', '교사상', '예술가상', '운동선수상', '연예인상'],
+        "2차 - 윤곽": ['silhouette-얼굴형-달걀형', 'silhouette-옆광대-안', 'silhouette-앞광대-높은'],
     }
 
 def main():
     st.title("🎭 Face Coordinate Analyzer")
     st.markdown("**실시간 좌표 계산 기반 얼굴 분석 플랫폼**")
 
+    # 사이드바에 데이터베이스 관리 기능 추가
+    render_database_management_sidebar()
+
     # 랜드마크 데이터 로드
     landmarks_data = load_landmarks_data()
 
     # 탭 생성
-    tab1, tab2 = st.tabs(["🧮 좌표 분석", "🔗 태그 연관성 분석"])
+    tab1, tab2, tab3 = st.tabs(["🧮 좌표 분석", "🔗 태그 연관성 분석", "🌊 태그 관계도"])
 
     with tab1:
         render_landmarks_analysis_tab(landmarks_data)
-    
+
     with tab2:
         render_tag_analysis_tab(landmarks_data)
+
+    with tab3:
+        render_sankey_diagram_tab(landmarks_data)
 
 def render_landmarks_analysis_tab(landmarks_data):
     """좌표 분석 탭 렌더링"""
@@ -193,6 +200,21 @@ def render_landmarks_analysis_tab(landmarks_data):
                 # 3단계 선택
                 selected_tags = []
 
+                # 추상 태그들 (전체적인 느낌)
+                abstract_tags = []
+                for group_name, group_tags in tag_groups.items():
+                    if group_name.startswith("추상"):
+                        available_tags = [tag for tag in group_tags if tag in all_tags]
+                        abstract_tags.extend(available_tags)
+
+                if abstract_tags:
+                    abstract_selected = st.sidebar.multiselect(
+                        "🌟 추상 태그 (전체적인 느낌):",
+                        sorted(abstract_tags),
+                        key="abstract_tags"
+                    )
+                    selected_tags.extend(abstract_selected)
+
                 # 1차 태그들 (기본 특성)
                 primary_tags = []
                 for group_name, group_tags in tag_groups.items():
@@ -208,34 +230,19 @@ def render_landmarks_analysis_tab(landmarks_data):
                     )
                     selected_tags.extend(primary_selected)
 
-                # 2차 태그들 (세부 스타일)
+                # 2차 태그들 (부위별 세부사항)
                 secondary_tags = []
                 for group_name, group_tags in tag_groups.items():
                     if group_name.startswith("2차"):
-                        available_tags = [tag for tag in group_tags if tag in all_tags]
-                        secondary_tags.extend(available_tags)
+                        secondary_tags.extend(group_tags)
 
                 if secondary_tags:
                     secondary_selected = st.sidebar.multiselect(
-                        "✨ 2차 태그 (세부 스타일):",
+                        "🔬 2차 태그 (부위별 세부사항):",
                         sorted(secondary_tags),
                         key="secondary_tags"
                     )
                     selected_tags.extend(secondary_selected)
-
-                # 3차 태그들 (가설/실험) - 데이터 존재 여부 무관
-                tertiary_tags = []
-                for group_name, group_tags in tag_groups.items():
-                    if group_name.startswith("3차"):
-                        tertiary_tags.extend(group_tags)
-
-                if tertiary_tags:
-                    tertiary_selected = st.sidebar.multiselect(
-                        "🔬 3차 태그 (가설/실험):",
-                        sorted(tertiary_tags),
-                        key="tertiary_tags"
-                    )
-                    selected_tags.extend(tertiary_selected)
 
             # 선택된 태그 수 표시
             if selected_tags:
@@ -308,6 +315,20 @@ def render_tag_analysis_tab(landmarks_data):
             )
         else:
             # 3단계 선택
+            # 추상 태그들
+            abstract_tags = []
+            for category, tags in tag_groups.items():
+                if '추상' in category:
+                    abstract_tags.extend(tags)
+
+            if abstract_tags:
+                abstract_selected = st.multiselect(
+                    "🌟 추상 태그:",
+                    sorted(abstract_tags),
+                    key="filter_abstract"
+                )
+                filter_tags.extend(abstract_selected)
+
             # 1차 태그들
             primary_tags = []
             for category, tags in tag_groups.items():
@@ -336,20 +357,6 @@ def render_tag_analysis_tab(landmarks_data):
                 )
                 filter_tags.extend(secondary_selected)
 
-            # 3차 태그들
-            tertiary_tags = []
-            for category, tags in tag_groups.items():
-                if '3차' in category:
-                    tertiary_tags.extend(tags)
-
-            if tertiary_tags:
-                tertiary_selected = st.multiselect(
-                    "🥉 3차 태그:",
-                    sorted(tertiary_tags),
-                    key="filter_tertiary"
-                )
-                filter_tags.extend(tertiary_selected)
-
     # 태그 그룹 정보 및 역방향 매핑 생성
     tag_groups = get_tag_groups()
     tag_to_category = {}
@@ -359,18 +366,18 @@ def render_tag_analysis_tab(landmarks_data):
             tag_to_category[tag] = cat_level
 
     def format_combination_label(combination):
-        parts = {'1차': [], '2차': [], '3차': []}
+        parts = {'추상': [], '1차': [], '2차': []}
         for tag in combination:
             category_level = tag_to_category.get(tag, '기타').split('-')[0]
-            if '1차' in category_level:
+            if '추상' in category_level:
+                parts['추상'].append(tag)
+            elif '1차' in category_level:
                 parts['1차'].append(tag)
             elif '2차' in category_level:
                 parts['2차'].append(tag)
-            elif '3차' in category_level:
-                parts['3차'].append(tag)
         
         label_parts = []
-        for level in ['1차', '2차', '3차']:
+        for level in ['추상', '1차', '2차']:
             if parts[level]:
                 label_parts.append(', '.join(parts[level]))
             else:
@@ -1093,6 +1100,525 @@ def calculate_length(landmarks, point1_id, point2_id, calc_type):
 #     # 상세 데이터 테이블
 #     with st.expander("📋 상세 데이터 보기"):
 #         st.dataframe(result_df, use_container_width=True)
+
+
+
+def render_sankey_diagram_tab(landmarks_data):
+    """태그 관계도 (Sankey Diagram) 탭 렌더링"""
+    st.header("🌊 태그 관계도 (Sankey Diagram)")
+    st.markdown("추상 → 1차 → 2차 태그 간의 관계와 빈도를 시각화합니다.")
+
+    if landmarks_data.empty or 'tags' not in landmarks_data.columns:
+        st.warning("태그 데이터가 포함된 파일이 필요합니다.")
+        return
+
+    # 태그 관계 분석
+    tag_relationships = analyze_tag_relationships(landmarks_data)
+
+    if not tag_relationships:
+        st.info("태그 관계를 분석할 수 있는 데이터가 충분하지 않습니다.")
+        return
+
+    # 메인 페이지에 필터 옵션 추가
+    st.write("### 🎯 관계도 필터")
+
+    col1, col2, col3 = st.columns([2, 1, 1])
+
+    with col1:
+        # 관계 타입 선택
+        relationship_type = st.selectbox(
+            "관계 타입:",
+            ["전체 흐름 (추상→1차→2차)", "추상→1차만", "1차→2차만"],
+            help="보고 싶은 관계 타입을 선택하세요."
+        )
+
+    with col2:
+        # 태그 선택 (관계 타입에 따라)
+        if "추상" in relationship_type:
+            # 추상 태그 선택
+            available_abstract_tags = sorted(tag_relationships['abstract_tags'])
+            selected_abstract_tag = st.selectbox(
+                "추상 태그:",
+                ["전체"] + available_abstract_tags,
+                help="특정 추상 태그 선택"
+            )
+            selected_primary_tag = "전체"
+        elif relationship_type == "1차→2차만":
+            # 1차 태그 선택
+            available_primary_tags = sorted(tag_relationships['primary_tags'])
+            selected_primary_tag = st.selectbox(
+                "1차 태그:",
+                ["전체"] + available_primary_tags,
+                help="특정 1차 태그 선택"
+            )
+            selected_abstract_tag = "전체"
+        else:
+            selected_abstract_tag = "전체"
+            selected_primary_tag = "전체"
+            st.empty()  # 빈 공간
+
+    with col3:
+        # 최소 빈도 설정
+        min_frequency = st.slider(
+            "최소 빈도:",
+            min_value=1,
+            max_value=10,
+            value=2,
+            help="이 빈도 이상의 관계만 표시됩니다."
+        )
+
+    # Sankey 다이어그램 생성
+    create_sankey_diagram(tag_relationships, selected_abstract_tag, min_frequency, relationship_type, selected_primary_tag)
+
+def analyze_tag_relationships(landmarks_data):
+    """태그 간 관계 분석"""
+    tag_groups = get_tag_groups()
+
+    # 태그 레벨별 분류
+    abstract_tags = set()
+    primary_tags = set()
+    secondary_tags = set()
+
+    for group_name, tags in tag_groups.items():
+        if group_name.startswith("추상"):
+            abstract_tags.update(tags)
+        elif group_name.startswith("1차"):
+            primary_tags.update(tags)
+        elif group_name.startswith("2차"):
+            secondary_tags.update(tags)
+
+    # 관계 분석
+    abstract_to_primary = {}
+    primary_to_secondary = {}
+    abstract_to_secondary = {}
+
+    for _, row in landmarks_data.iterrows():
+        if 'tags' in row and row['tags']:
+            row_tags = row['tags'] if isinstance(row['tags'], list) else []
+
+            # 해당 행의 태그들을 레벨별로 분류
+            row_abstract = [tag for tag in row_tags if tag in abstract_tags]
+            row_primary = [tag for tag in row_tags if tag in primary_tags]
+            row_secondary = [tag for tag in row_tags if tag in secondary_tags]
+
+            # 추상 → 1차 관계
+            for abs_tag in row_abstract:
+                for prim_tag in row_primary:
+                    key = (abs_tag, prim_tag)
+                    abstract_to_primary[key] = abstract_to_primary.get(key, 0) + 1
+
+            # 1차 → 2차 관계
+            for prim_tag in row_primary:
+                for sec_tag in row_secondary:
+                    key = (prim_tag, sec_tag)
+                    primary_to_secondary[key] = primary_to_secondary.get(key, 0) + 1
+
+            # 추상 → 2차 관계 (직접 연결)
+            for abs_tag in row_abstract:
+                for sec_tag in row_secondary:
+                    key = (abs_tag, sec_tag)
+                    abstract_to_secondary[key] = abstract_to_secondary.get(key, 0) + 1
+
+    return {
+        'abstract_to_primary': abstract_to_primary,
+        'primary_to_secondary': primary_to_secondary,
+        'abstract_to_secondary': abstract_to_secondary,
+        'abstract_tags': list(abstract_tags),
+        'primary_tags': list(primary_tags),
+        'secondary_tags': list(secondary_tags)
+    }
+
+def create_sankey_diagram(relationships, selected_abstract_tag="전체", min_frequency=2, relationship_type="전체 흐름 (추상→1차→2차)", selected_primary_tag="전체"):
+    """Sankey 다이어그램 생성"""
+    import plotly.graph_objects as go
+
+    # 관계 타입에 따른 데이터 필터링
+    filtered_abs_to_prim = {}
+    filtered_prim_to_sec = {}
+
+    if relationship_type == "1차→2차만":
+        # 1차→2차 관계만 표시
+        if selected_primary_tag != "전체":
+            filtered_prim_to_sec = {k: v for k, v in relationships['primary_to_secondary'].items()
+                                  if k[0] == selected_primary_tag and v >= min_frequency}
+        else:
+            filtered_prim_to_sec = {k: v for k, v in relationships['primary_to_secondary'].items() if v >= min_frequency}
+
+    elif relationship_type == "추상→1차만":
+        # 추상→1차 관계만 표시
+        if selected_abstract_tag != "전체":
+            filtered_abs_to_prim = {k: v for k, v in relationships['abstract_to_primary'].items()
+                                  if k[0] == selected_abstract_tag and v >= min_frequency}
+        else:
+            filtered_abs_to_prim = {k: v for k, v in relationships['abstract_to_primary'].items() if v >= min_frequency}
+
+    else:  # "전체 흐름 (추상→1차→2차)"
+        # 추상 태그 필터 적용
+        if selected_abstract_tag != "전체":
+            # 선택된 추상 태그와 연결된 관계만 필터링
+            for (abs_tag, prim_tag), count in relationships['abstract_to_primary'].items():
+                if abs_tag == selected_abstract_tag and count >= min_frequency:
+                    filtered_abs_to_prim[(abs_tag, prim_tag)] = count
+
+            # 필터링된 1차 태그들과 연결된 2차 태그 관계 찾기
+            connected_primary_tags = set(prim_tag for (abs_tag, prim_tag) in filtered_abs_to_prim.keys())
+            for (prim_tag, sec_tag), count in relationships['primary_to_secondary'].items():
+                if prim_tag in connected_primary_tags and count >= min_frequency:
+                    filtered_prim_to_sec[(prim_tag, sec_tag)] = count
+        else:
+            # 전체 보기: 최소 빈도만 적용
+            filtered_abs_to_prim = {k: v for k, v in relationships['abstract_to_primary'].items() if v >= min_frequency}
+            filtered_prim_to_sec = {k: v for k, v in relationships['primary_to_secondary'].items() if v >= min_frequency}
+
+    # 실제 사용되는 노드만 추출
+    used_abstract_tags = set()
+    used_primary_tags = set()
+    used_secondary_tags = set()
+
+    for (abs_tag, prim_tag) in filtered_abs_to_prim.keys():
+        used_abstract_tags.add(abs_tag)
+        used_primary_tags.add(prim_tag)
+
+    for (prim_tag, sec_tag) in filtered_prim_to_sec.keys():
+        used_primary_tags.add(prim_tag)
+        used_secondary_tags.add(sec_tag)
+
+    # 노드를 빈도순으로 정렬
+    def sort_by_frequency(tags, relationships, is_source=True):
+        """태그들을 관계 빈도순으로 정렬"""
+        tag_frequency = {}
+
+        for (source_tag, target_tag), count in relationships.items():
+            if is_source:
+                # source 태그의 총 빈도 계산
+                if source_tag in tags:
+                    tag_frequency[source_tag] = tag_frequency.get(source_tag, 0) + count
+            else:
+                # target 태그의 총 빈도 계산
+                if target_tag in tags:
+                    tag_frequency[target_tag] = tag_frequency.get(target_tag, 0) + count
+
+        # 빈도순으로 정렬 (높은 순)
+        sorted_tags = sorted(tags, key=lambda x: tag_frequency.get(x, 0), reverse=True)
+        return sorted_tags
+
+    # 노드 생성
+    all_nodes = []
+    node_colors = []
+
+    # 추상 태그 (빈도순 정렬)
+    if used_abstract_tags:
+        abstract_nodes = sort_by_frequency(used_abstract_tags, filtered_abs_to_prim, is_source=True)
+    else:
+        abstract_nodes = []
+    all_nodes.extend([f"추상: {tag}" for tag in abstract_nodes])
+    node_colors.extend(['#1f77b4'] * len(abstract_nodes))
+
+    # 1차 태그 (빈도순 정렬)
+    if used_primary_tags:
+        # 1차 태그는 추상→1차 관계와 1차→2차 관계 둘 다 고려
+        primary_freq = {}
+        # 추상→1차에서 target으로서의 빈도
+        for (abs_tag, prim_tag), count in filtered_abs_to_prim.items():
+            if prim_tag in used_primary_tags:
+                primary_freq[prim_tag] = primary_freq.get(prim_tag, 0) + count
+        # 1차→2차에서 source로서의 빈도
+        for (prim_tag, sec_tag), count in filtered_prim_to_sec.items():
+            if prim_tag in used_primary_tags:
+                primary_freq[prim_tag] = primary_freq.get(prim_tag, 0) + count
+
+        primary_nodes = sorted(used_primary_tags, key=lambda x: primary_freq.get(x, 0), reverse=True)
+    else:
+        primary_nodes = []
+    all_nodes.extend([f"1차: {tag}" for tag in primary_nodes])
+    node_colors.extend(['#2ca02c'] * len(primary_nodes))
+
+    # 2차 태그 (빈도순 정렬)
+    if used_secondary_tags:
+        secondary_nodes = sort_by_frequency(used_secondary_tags, filtered_prim_to_sec, is_source=False)
+    else:
+        secondary_nodes = []
+    all_nodes.extend([f"2차: {tag}" for tag in secondary_nodes])
+    node_colors.extend(['#ff7f0e'] * len(secondary_nodes))
+
+    if not all_nodes:
+        st.warning(f"선택된 조건에 맞는 태그 관계가 없습니다. (관계타입: {relationship_type}, 최소빈도: {min_frequency})")
+        return
+
+    # 노드 인덱스 맵핑
+    node_dict = {node: idx for idx, node in enumerate(all_nodes)}
+
+    # 빈도별 색상 분위수 계산
+    def get_frequency_color(frequency, all_frequencies, link_type="abs_to_prim"):
+        """빈도 분위수에 따른 색상 반환"""
+        import numpy as np
+
+        if not all_frequencies:
+            return 'rgba(128, 128, 128, 0.6)'  # 기본 회색
+
+        # 분위수 계산
+        q25 = np.percentile(all_frequencies, 25)
+        q50 = np.percentile(all_frequencies, 50)
+        q75 = np.percentile(all_frequencies, 75)
+
+        # 색상 팔레트 (추상→1차, 1차→2차별로 다른 색상)
+        if link_type == "abs_to_prim":
+            colors = {
+                'Q1': 'rgba(255, 182, 193, 0.7)',  # 연한 핑크 (하위 25%)
+                'Q2': 'rgba(255, 105, 180, 0.7)',  # 핫핑크 (25-50%)
+                'Q3': 'rgba(220, 20, 60, 0.7)',    # 크림슨 (50-75%)
+                'Q4': 'rgba(139, 0, 0, 0.8)'       # 다크레드 (상위 25%)
+            }
+        else:  # prim_to_sec
+            colors = {
+                'Q1': 'rgba(173, 216, 230, 0.7)',  # 연한 파랑 (하위 25%)
+                'Q2': 'rgba(100, 149, 237, 0.7)',  # 코른플라워 블루 (25-50%)
+                'Q3': 'rgba(65, 105, 225, 0.7)',   # 로얄 블루 (50-75%)
+                'Q4': 'rgba(25, 25, 112, 0.8)'     # 미드나잇 블루 (상위 25%)
+            }
+
+        # 분위수에 따른 색상 결정
+        if frequency <= q25:
+            return colors['Q1']
+        elif frequency <= q50:
+            return colors['Q2']
+        elif frequency <= q75:
+            return colors['Q3']
+        else:
+            return colors['Q4']
+
+    # 모든 빈도 값 수집 (분위수 계산용)
+    abs_to_prim_frequencies = list(filtered_abs_to_prim.values())
+    prim_to_sec_frequencies = list(filtered_prim_to_sec.values())
+
+    # 링크 생성
+    source = []
+    target = []
+    value = []
+    link_colors = []
+
+    # 추상 → 1차 링크
+    for (abs_tag, prim_tag), count in filtered_abs_to_prim.items():
+        source.append(node_dict[f"추상: {abs_tag}"])
+        target.append(node_dict[f"1차: {prim_tag}"])
+        value.append(count)
+        color = get_frequency_color(count, abs_to_prim_frequencies, "abs_to_prim")
+        link_colors.append(color)
+
+    # 1차 → 2차 링크
+    for (prim_tag, sec_tag), count in filtered_prim_to_sec.items():
+        source.append(node_dict[f"1차: {prim_tag}"])
+        target.append(node_dict[f"2차: {sec_tag}"])
+        value.append(count)
+        color = get_frequency_color(count, prim_to_sec_frequencies, "prim_to_sec")
+        link_colors.append(color)
+
+    # Sankey 다이어그램 생성
+    if relationship_type == "1차→2차만":
+        title_text = f"태그 관계도: 1차 → 2차 ({selected_primary_tag})" if selected_primary_tag != "전체" else "태그 관계도: 1차 → 2차"
+    elif relationship_type == "추상→1차만":
+        title_text = f"태그 관계도: 추상 → 1차 ({selected_abstract_tag})" if selected_abstract_tag != "전체" else "태그 관계도: 추상 → 1차"
+    else:
+        title_text = f"태그 관계도: 전체 흐름 ({selected_abstract_tag})" if selected_abstract_tag != "전체" else "태그 관계도: 전체 흐름"
+
+    # 노드 위치 계산 (관계 타입에 따라)
+    node_x = []
+    node_y = []
+
+    if relationship_type == "1차→2차만":
+        # 1차 태그들 (X=0.01, 왼쪽)
+        primary_count = len(primary_nodes)
+        for i in range(primary_count):
+            node_x.append(0.01)
+            node_y.append(0.1 + (0.8 * i / max(1, primary_count - 1)) if primary_count > 1 else 0.5)
+
+        # 2차 태그들 (X=0.99, 오른쪽)
+        secondary_count = len(secondary_nodes)
+        for i in range(secondary_count):
+            node_x.append(0.99)
+            node_y.append(0.1 + (0.8 * i / max(1, secondary_count - 1)) if secondary_count > 1 else 0.5)
+
+    elif relationship_type == "추상→1차만":
+        # 추상 태그들 (X=0.01, 왼쪽)
+        abstract_count = len(abstract_nodes)
+        for i in range(abstract_count):
+            node_x.append(0.01)
+            node_y.append(0.1 + (0.8 * i / max(1, abstract_count - 1)) if abstract_count > 1 else 0.5)
+
+        # 1차 태그들 (X=0.99, 오른쪽)
+        primary_count = len(primary_nodes)
+        for i in range(primary_count):
+            node_x.append(0.99)
+            node_y.append(0.1 + (0.8 * i / max(1, primary_count - 1)) if primary_count > 1 else 0.5)
+
+    else:  # "전체 흐름 (추상→1차→2차)"
+        # 추상 태그들 (X=0.01, 왼쪽 열)
+        abstract_count = len(abstract_nodes)
+        for i in range(abstract_count):
+            node_x.append(0.01)
+            node_y.append(0.1 + (0.8 * i / max(1, abstract_count - 1)) if abstract_count > 1 else 0.5)
+
+        # 1차 태그들 (X=0.5, 중간 열)
+        primary_count = len(primary_nodes)
+        for i in range(primary_count):
+            node_x.append(0.5)
+            node_y.append(0.1 + (0.8 * i / max(1, primary_count - 1)) if primary_count > 1 else 0.5)
+
+        # 2차 태그들 (X=0.99, 오른쪽 열)
+        secondary_count = len(secondary_nodes)
+        for i in range(secondary_count):
+            node_x.append(0.99)
+            node_y.append(0.1 + (0.8 * i / max(1, secondary_count - 1)) if secondary_count > 1 else 0.5)
+
+    fig = go.Figure(data=[go.Sankey(
+        node=dict(
+            pad=15,
+            thickness=20,
+            line=dict(color="black", width=0.5),
+            label=all_nodes,
+            color=node_colors,
+            x=node_x,
+            y=node_y
+        ),
+        link=dict(
+            source=source,
+            target=target,
+            value=value,
+            color=link_colors
+        )
+    )])
+
+    fig.update_layout(
+        title_text=title_text,
+        font_size=12,
+        height=800
+    )
+
+    st.plotly_chart(fig, use_container_width=True)
+
+
+    # 통계 정보 표시
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+        st.metric("추상 태그", len(relationships['abstract_tags']))
+
+    with col2:
+        st.metric("1차 태그", len(relationships['primary_tags']))
+
+    with col3:
+        st.metric("2차 태그", len(relationships['secondary_tags']))
+
+    # 상위 관계 표시
+    st.subheader("🔗 주요 태그 관계")
+
+    # 추상→1차 상위 관계
+    if relationships['abstract_to_primary']:
+        st.write("**추상 → 1차 태그 (상위 10개)**")
+        abs_to_prim_sorted = sorted(relationships['abstract_to_primary'].items(),
+                                  key=lambda x: x[1], reverse=True)[:10]
+
+        for (abs_tag, prim_tag), count in abs_to_prim_sorted:
+            st.write(f"• {abs_tag} → {prim_tag}: {count}회")
+
+    # 1차→2차 상위 관계
+    if relationships['primary_to_secondary']:
+        st.write("**1차 → 2차 태그 (상위 10개)**")
+        prim_to_sec_sorted = sorted(relationships['primary_to_secondary'].items(),
+                                  key=lambda x: x[1], reverse=True)[:10]
+
+        for (prim_tag, sec_tag), count in prim_to_sec_sorted:
+            st.write(f"• {prim_tag} → {sec_tag}: {count}회")
+
+
+def render_database_management_sidebar():
+    """사이드바에 데이터베이스 관리 기능 렌더링"""
+    st.sidebar.write("### 🗄️ 데이터베이스 관리")
+
+    # JSON 파일 스캔
+    json_files_path = Path("json_files")
+    if json_files_path.exists():
+        json_files = list(json_files_path.glob("*.json"))
+
+        if json_files:
+            st.sidebar.write(f"📁 `json_files/`에서 {len(json_files)}개 파일 발견")
+
+            # 미리보기
+            with st.sidebar.expander("파일 목록 보기"):
+                for file_path in json_files[:5]:  # 최대 5개만 표시
+                    st.write(f"• {file_path.name}")
+                if len(json_files) > 5:
+                    st.write(f"... 외 {len(json_files) - 5}개")
+
+            # 데이터베이스 추가 버튼
+            if st.sidebar.button("🔄 데이터베이스에 추가",
+                               help="json_files/ 폴더의 파일들을 데이터베이스에 영구 저장합니다."):
+
+                with st.spinner("데이터베이스에 추가 중..."):
+                    try:
+                        # JSON 파일들 로드
+                        json_data_list = []
+                        failed_files = []
+
+                        for file_path in json_files:
+                            try:
+                                with open(file_path, 'r', encoding='utf-8') as f:
+                                    json_data = json.load(f)
+                                    # 파일명 추가 (추적용)
+                                    json_data['_filename'] = file_path.name
+                                    json_data_list.append(json_data)
+                            except Exception as e:
+                                failed_files.append(f"{file_path.name}: {e}")
+                                st.sidebar.error(f"파일 읽기 오류 {file_path.name}: {e}")
+
+                        # 데이터베이스에 추가
+                        if json_data_list:
+                            # 임포트 전 카운트
+                            initial_count = len(json_data_list)
+
+                            # 임포트 실행
+                            import_result = db_manager.import_json_data(json_data_list)
+
+                            # 결과 표시
+                            st.sidebar.success(f"✅ 처리 완료!")
+                            st.sidebar.info(f"📥 읽기 성공: {initial_count}개")
+
+                            if failed_files:
+                                st.sidebar.warning(f"❌ 읽기 실패: {len(failed_files)}개")
+                                with st.sidebar.expander("실패한 파일들"):
+                                    for failed_file in failed_files:
+                                        st.write(f"• {failed_file}")
+
+                            # 중복 체크 정보도 표시하면 좋을 것 같습니다
+                            st.sidebar.info(f"💡 중복된 이름의 파일은 자동으로 건너뜁니다.")
+
+                            # 처리된 파일들을 processed 폴더로 이동 (선택사항)
+                            processed_path = json_files_path / "processed"
+                            processed_path.mkdir(exist_ok=True)
+
+                            moved_count = 0
+                            for file_path in json_files:
+                                try:
+                                    import shutil
+                                    shutil.move(str(file_path), str(processed_path / file_path.name))
+                                    moved_count += 1
+                                except Exception as e:
+                                    st.sidebar.warning(f"파일 이동 실패 {file_path.name}: {e}")
+
+                            if moved_count > 0:
+                                st.sidebar.info(f"📦 {moved_count}개 파일이 `json_files/processed/`로 이동되었습니다.")
+
+                            # 페이지 새로고침을 위한 hint
+                            st.sidebar.info("💡 변경사항을 확인하려면 페이지를 새로고침하세요.")
+                        else:
+                            st.sidebar.warning("처리할 수 있는 파일이 없습니다.")
+
+                    except Exception as e:
+                        st.sidebar.error(f"데이터베이스 추가 중 오류 발생: {e}")
+        else:
+            st.sidebar.info("📭 `json_files/` 폴더가 비어있습니다.")
+    else:
+        st.sidebar.info("📁 `json_files/` 폴더가 없습니다.")
 
 
 
