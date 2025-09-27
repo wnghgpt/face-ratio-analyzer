@@ -7,7 +7,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 import numpy as np
 import json
-from .landmark_calculator import calculate_length
+from .landmark_calculator import calculate_length, calculate_curvature
 
 
 def get_tag_groups():
@@ -863,3 +863,319 @@ def execute_level_comparison_analysis(landmarks_data, selected_feature, point1, 
             })
             detail_df = detail_df.sort_values('측정값', ascending=False)
             st.dataframe(detail_df, use_container_width=True)
+
+
+def execute_level_curvature_analysis(landmarks_data, selected_feature, point_group):
+    """레벨별 곡률 패턴 분석 실행"""
+    st.write("### 🌊 곡률 패턴 분석 실행 중...")
+
+    tag_groups = get_tag_groups()
+
+    # 선택된 특성의 태그들
+    if selected_feature in tag_groups:
+        feature_tags = tag_groups[selected_feature]
+    else:
+        # 그룹명에 없으면 특성명으로 태그들을 찾아보기
+        feature_tags = []
+        for group_name, tags in tag_groups.items():
+            for tag in tags:
+                if tag.startswith(selected_feature):
+                    feature_tags.append(tag)
+
+        if not feature_tags:
+            st.error(f"선택된 특성 '{selected_feature}'이(가) 정의되지 않았습니다.")
+            st.info("💡 사용 가능한 특성들:")
+            # 사용 가능한 특성명들 표시
+            available_features = set()
+            for group_name, tags in tag_groups.items():
+                st.write(f"**{group_name}**: {', '.join(tags[:5])}{'...' if len(tags) > 5 else ''}")
+                # 특성명 추출 (예: eyebrow-곡률)
+                for tag in tags:
+                    if '-' in tag:
+                        feature_prefix = '-'.join(tag.split('-')[:-1])  # 마지막 레벨 제거
+                        available_features.add(feature_prefix)
+            st.write(f"**추출 가능한 특성명**: {', '.join(sorted(available_features))}")
+            return
+        else:
+            st.success(f"특성 '{selected_feature}'에서 {len(feature_tags)}개 태그를 찾았습니다: {', '.join(feature_tags)}")
+
+    # 각 레벨별 곡률 데이터 수집
+    level_curvatures = {}  # {level: {face_name: [curvature_values]}}
+    level_names = {}  # {level: [face_names]}
+
+    for _, row in landmarks_data.iterrows():
+        try:
+            # 랜드마크 데이터 파싱
+            if isinstance(row['landmarks'], str):
+                landmarks = json.loads(row['landmarks'])
+            else:
+                landmarks = row['landmarks']
+
+            # 태그 확인
+            if 'tags' in row and row['tags']:
+                row_tags = row['tags'] if isinstance(row['tags'], list) else []
+
+                # 선택된 특성의 태그가 있는지 확인
+                for tag in feature_tags:
+                    if tag in row_tags:
+                        # 곡률 계산
+                        curvatures = calculate_curvature(landmarks, point_group)
+                        if curvatures is not None:
+                            if tag not in level_curvatures:
+                                level_curvatures[tag] = {}
+                                level_names[tag] = []
+
+                            level_curvatures[tag][row['name']] = curvatures
+                            level_names[tag].append(row['name'])
+                        break
+        except Exception as e:
+            st.error(f"데이터 처리 오류 ({row['name']}): {e}")
+            continue
+
+    # 유효한 레벨만 필터링
+    valid_levels = {level: data for level, data in level_curvatures.items() if data}
+
+    if not valid_levels:
+        st.error("❌ 분석할 수 있는 데이터가 없습니다.")
+        return
+
+    st.write("### 📊 곡률 패턴 분석 결과")
+
+    # 탭으로 구분된 시각화
+    tab1, tab2, tab3 = st.tabs(["패턴 오버레이", "점별 분포", "유사도 분석"])
+
+    with tab1:
+        render_curvature_overlay_patterns(valid_levels, point_group, selected_feature)
+
+    with tab2:
+        render_curvature_point_distributions(valid_levels, point_group, selected_feature)
+
+    with tab3:
+        render_curvature_similarity_analysis(valid_levels, point_group, selected_feature)
+
+
+def render_curvature_overlay_patterns(valid_levels, point_group, selected_feature):
+    """곡률 패턴 오버레이 그래프"""
+    st.write("#### 🌊 태그별 곡률 패턴 오버레이")
+
+    # 색상 팔레트
+    colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f']
+
+    fig = go.Figure()
+
+    point_indices = list(range(len(point_group)))
+
+    # 각 레벨별로 처리
+    for level_idx, (level, face_curvatures) in enumerate(valid_levels.items()):
+        level_color = colors[level_idx % len(colors)]
+
+        # 개별 얼굴들의 곡률 패턴
+        for face_name, curvatures in face_curvatures.items():
+            fig.add_trace(go.Scatter(
+                x=point_indices,
+                y=curvatures,
+                mode='lines+markers',
+                line=dict(color=level_color, width=1.5),
+                marker=dict(color=level_color, size=4),
+                opacity=0.6,
+                name=f"{level}_{face_name}",
+                legendgroup=level,
+                showlegend=False,
+                hovertemplate=f"레벨: {level}<br>얼굴: {face_name}<br>점: %{{x}}<br>곡률: %{{y:.4f}}<extra></extra>"
+            ))
+
+        # 평균 패턴 계산
+        all_curvatures = list(face_curvatures.values())
+        mean_curvatures = np.mean(all_curvatures, axis=0)
+        std_curvatures = np.std(all_curvatures, axis=0)
+
+        # 평균선 (굵게)
+        fig.add_trace(go.Scatter(
+            x=point_indices,
+            y=mean_curvatures,
+            mode='lines+markers',
+            line=dict(color=level_color, width=4),
+            marker=dict(color=level_color, size=8, symbol='diamond'),
+            name=f"{level} (평균)",
+            legendgroup=level,
+            hovertemplate=f"레벨: {level} 평균<br>점: %{{x}}<br>곡률: %{{y:.4f}}<extra></extra>"
+        ))
+
+        # 신뢰구간
+        fig.add_trace(go.Scatter(
+            x=point_indices + point_indices[::-1],
+            y=(mean_curvatures + std_curvatures).tolist() + (mean_curvatures - std_curvatures).tolist()[::-1],
+            fill='toself',
+            fillcolor=level_color,
+            opacity=0.2,
+            line=dict(color='rgba(255,255,255,0)'),
+            name=f"{level} (±1σ)",
+            legendgroup=level,
+            showlegend=False,
+            hoverinfo='skip'
+        ))
+
+    # y=0 기준선
+    fig.add_hline(y=0, line_dash="dash", line_color="gray", opacity=0.7,
+                  annotation_text="기준선 (y=0)", annotation_position="bottom right")
+
+    fig.update_layout(
+        title=f"{selected_feature} - 곡률 패턴 비교",
+        xaxis_title="점 인덱스",
+        yaxis_title="곡률 값 (양수: ∩볼록, 음수: ∪오목)",
+        hovermode='x unified',
+        legend=dict(groupclick="toggleitem")
+    )
+
+    st.plotly_chart(fig, use_container_width=True)
+
+
+def render_curvature_point_distributions(valid_levels, point_group, selected_feature):
+    """각 점별 곡률 분포"""
+    st.write("#### 📊 점별 곡률 분포")
+
+    num_points = len(point_group)
+
+    # 서브플롯 생성
+    from plotly.subplots import make_subplots
+
+    fig = make_subplots(
+        rows=1, cols=num_points,
+        subplot_titles=[f"점 {i} (#{point_group[i]})" for i in range(num_points)],
+        shared_yaxes=True
+    )
+
+    colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd']
+
+    for point_idx in range(num_points):
+        for level_idx, (level, face_curvatures) in enumerate(valid_levels.items()):
+            # 해당 점에서의 곡률값들 수집
+            point_curvatures = [curvatures[point_idx] for curvatures in face_curvatures.values()]
+
+            fig.add_trace(
+                go.Box(
+                    y=point_curvatures,
+                    name=level,
+                    marker_color=colors[level_idx % len(colors)],
+                    legendgroup=level,
+                    showlegend=(point_idx == 0),  # 첫 번째 서브플롯에서만 범례 표시
+                    boxpoints='all',
+                    jitter=0.3,
+                    pointpos=-1.8
+                ),
+                row=1, col=point_idx + 1
+            )
+
+    # y=0 기준선들
+    for point_idx in range(num_points):
+        fig.add_hline(y=0, line_dash="dash", line_color="gray", opacity=0.5,
+                      row=1, col=point_idx + 1)
+
+    fig.update_layout(
+        title=f"{selected_feature} - 점별 곡률 분포",
+        height=400
+    )
+
+    fig.update_yaxes(title_text="곡률 값", row=1, col=1)
+
+    st.plotly_chart(fig, use_container_width=True)
+
+
+def render_curvature_similarity_analysis(valid_levels, point_group, selected_feature):
+    """곡률 패턴 유사도 분석"""
+    st.write("#### 🔍 곡률 패턴 유사도 분석")
+
+    # 모든 얼굴의 곡률 데이터 평탄화
+    all_faces = {}
+    face_levels = {}
+
+    for level, face_curvatures in valid_levels.items():
+        for face_name, curvatures in face_curvatures.items():
+            all_faces[face_name] = curvatures
+            face_levels[face_name] = level
+
+    if len(all_faces) < 2:
+        st.warning("유사도 분석을 위해서는 최소 2개 이상의 얼굴이 필요합니다.")
+        return
+
+    # 유사도 매트릭스 계산 (코사인 유사도)
+    face_names = list(all_faces.keys())
+    n_faces = len(face_names)
+    similarity_matrix = np.zeros((n_faces, n_faces))
+
+    for i, face1 in enumerate(face_names):
+        for j, face2 in enumerate(face_names):
+            if i == j:
+                similarity_matrix[i, j] = 1.0
+            else:
+                # 코사인 유사도 계산
+                vec1 = np.array(all_faces[face1])
+                vec2 = np.array(all_faces[face2])
+
+                norm1 = np.linalg.norm(vec1)
+                norm2 = np.linalg.norm(vec2)
+
+                if norm1 > 0 and norm2 > 0:
+                    similarity = np.dot(vec1, vec2) / (norm1 * norm2)
+                else:
+                    similarity = 0
+
+                similarity_matrix[i, j] = similarity
+
+    # 히트맵 생성
+    fig = px.imshow(
+        similarity_matrix,
+        x=face_names,
+        y=face_names,
+        color_continuous_scale='RdYlBu_r',
+        title=f"{selected_feature} - 곡률 패턴 유사도 매트릭스",
+        labels={'color': '유사도'},
+        zmin=-1, zmax=1
+    )
+
+    # 텍스트 추가
+    for i in range(n_faces):
+        for j in range(n_faces):
+            fig.add_annotation(
+                x=j, y=i,
+                text=f"{similarity_matrix[i, j]:.2f}",
+                showarrow=False,
+                font=dict(color="white" if abs(similarity_matrix[i, j]) > 0.5 else "black")
+            )
+
+    fig.update_layout(height=max(400, n_faces * 30))
+    st.plotly_chart(fig, use_container_width=True)
+
+    # 유사도 통계
+    col1, col2, col3 = st.columns(3)
+
+    # 같은 태그 내 평균 유사도
+    same_tag_similarities = []
+    diff_tag_similarities = []
+
+    for i, face1 in enumerate(face_names):
+        for j, face2 in enumerate(face_names):
+            if i < j:  # 중복 제거
+                if face_levels[face1] == face_levels[face2]:
+                    same_tag_similarities.append(similarity_matrix[i, j])
+                else:
+                    diff_tag_similarities.append(similarity_matrix[i, j])
+
+    with col1:
+        if same_tag_similarities:
+            st.metric("같은 태그 내 평균 유사도", f"{np.mean(same_tag_similarities):.3f}")
+        else:
+            st.metric("같은 태그 내 평균 유사도", "N/A")
+
+    with col2:
+        if diff_tag_similarities:
+            st.metric("다른 태그 간 평균 유사도", f"{np.mean(diff_tag_similarities):.3f}")
+        else:
+            st.metric("다른 태그 간 평균 유사도", "N/A")
+
+    with col3:
+        if same_tag_similarities and diff_tag_similarities:
+            separation = np.mean(same_tag_similarities) - np.mean(diff_tag_similarities)
+            st.metric("태그 구분도", f"{separation:.3f}")
+        else:
+            st.metric("태그 구분도", "N/A")

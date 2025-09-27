@@ -24,7 +24,8 @@ from utils.tag_processor import (
     analyze_tag_relationships,
     execute_single_tag_analysis,
     execute_level_comparison_analysis,
-    execute_level_comparison_analysis_ratio
+    execute_level_comparison_analysis_ratio,
+    execute_level_curvature_analysis
 )
 from utils.visualization import create_sankey_diagram
 
@@ -493,7 +494,7 @@ def render_level_comparison_analysis(landmarks_data, point1, point2, calc_type):
     with col2:
         measurement_type = st.selectbox(
             "측정방식:",
-            ["단순 길이", "비율 계산"],
+            ["단순 길이", "비율 계산", "곡률 패턴"],
             index=0,
             key="level_measurement_type"
         )
@@ -510,7 +511,7 @@ def render_level_comparison_analysis(landmarks_data, point1, point2, calc_type):
         if st.button("레벨별 비교 분석 실행", key="level_simple_exec"):
             execute_level_comparison_analysis(landmarks_data, selected_feature, point1, point2, calc_type)
 
-    else:  # 비율 계산
+    elif measurement_type == "비율 계산":
         # 분모와 분자를 한 줄에 배치
         col1, col2, col3, col4, col5, col6, col7 = st.columns([1, 1, 1, 0.5, 1, 1, 1])
 
@@ -535,6 +536,31 @@ def render_level_comparison_analysis(landmarks_data, point1, point2, calc_type):
 
         if st.button("레벨별 비교 분석 실행 (비율)", key="level_ratio_exec"):
             execute_level_comparison_analysis_ratio(landmarks_data, selected_feature, point1, point2, calc_type1, point3, point4, calc_type2)
+
+    elif measurement_type == "곡률 패턴":
+        st.write("#### 곡률 패턴 분석 설정")
+        point_group_input = st.text_input(
+            "점 번호들 (쉼표로 구분)",
+            value="33,161,160,159,158",
+            help="예: 33,161,160,159,158 (5개 점)",
+            key="level_curvature_points"
+        )
+
+        # 점 번호들을 파싱
+        try:
+            point_group = [int(x.strip()) for x in point_group_input.split(',') if x.strip()]
+            if len(point_group) < 3:
+                st.error("최소 3개 이상의 점이 필요합니다.")
+            elif len(point_group) > 10:
+                st.error("최대 10개까지만 입력 가능합니다.")
+            else:
+                st.success(f"{len(point_group)}개 점 선택됨")
+
+                if st.button("레벨별 곡률 패턴 분석 실행", key="level_curvature_exec"):
+                    execute_level_curvature_analysis(landmarks_data, selected_feature, point_group)
+        except:
+            st.error("올바른 숫자 형식으로 입력하세요.")
+            point_group = [33, 161, 160, 159, 158]
 
 
 def render_database_management_sidebar():

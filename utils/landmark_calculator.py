@@ -204,6 +204,9 @@ def calculate_curvature(landmarks, point_ids):
         # numpy 배열로 변환
         points = np.array(selected_points)
 
+        # 얼굴 중심 기준으로 방향 정규화 판단
+        direction_factor = determine_direction_factor(points, point_ids)
+
         # parametric t 값 생성 (0부터 점 개수-1까지)
         t = np.arange(len(points))
 
@@ -230,9 +233,50 @@ def calculate_curvature(landmarks, point_ids):
             else:
                 curvature = numerator / denominator
 
+            # 방향 정규화 적용
+            curvature *= direction_factor
+
             curvatures.append(curvature)
 
         return curvatures
 
     except Exception as e:
         return None
+
+
+def determine_direction_factor(points, point_ids):
+    """얼굴 중심 기준으로 방향 정규화 인수 결정
+
+    Args:
+        points: 점들의 좌표 배열 [[x1, y1], [x2, y2], ...]
+        point_ids: MediaPipe 점 번호들
+
+    Returns:
+        1 또는 -1 (방향 정규화 인수)
+    """
+
+    # 얼굴 중심 X 좌표 (대략 200-250 범위, 이미지 너비 500 기준)
+    face_center_x = 250
+
+    # 시작점과 끝점의 X 좌표
+    start_x = points[0][0]
+    end_x = points[-1][0]
+
+    # 전체 이동 방향 (내측→외측 기준)
+    overall_direction = end_x - start_x
+
+    # 좌측/우측 판단
+    avg_x = np.mean(points[:, 0])
+    is_left_side = avg_x < face_center_x
+
+    # 방향 정규화 로직
+    if is_left_side:
+        # 좌측: 내측→외측이 X 증가 방향 (양수)
+        # 정상적인 내측→외측 이동이면 그대로, 반대면 뒤집기
+        direction_factor = 1 if overall_direction > 0 else -1
+    else:
+        # 우측: 내측→외측이 X 감소 방향 (음수)
+        # 정상적인 내측→외측 이동이면 뒤집기, 반대면 그대로
+        direction_factor = -1 if overall_direction < 0 else 1
+
+    return direction_factor
