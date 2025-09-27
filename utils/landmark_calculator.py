@@ -2,6 +2,7 @@
 랜드마크 좌표 기반 계산 유틸리티
 """
 import numpy as np
+from scipy import interpolate
 
 
 def calculate_landmarks_metric(landmarks, points, calc_type):
@@ -169,6 +170,69 @@ def calculate_length(landmarks, point1_id, point2_id, calc_type):
             return abs(p1['y'] - p2['y'])
         else:
             return None
+
+    except Exception as e:
+        return None
+
+
+def calculate_curvature(landmarks, point_ids):
+    """점 그룹의 곡률 계산
+
+    Args:
+        landmarks: 랜드마크 리스트
+        point_ids: 점 번호 리스트 (5-7개)
+
+    Returns:
+        각 점에서의 곡률 값 리스트 또는 None
+    """
+    try:
+        if len(point_ids) < 3:
+            return None
+
+        # 랜드마크에서 선택된 점들 추출
+        selected_points = []
+        for point_id in point_ids:
+            landmark = next((lm for lm in landmarks if lm['mpidx'] == point_id), None)
+            if landmark:
+                selected_points.append([landmark['x'], landmark['y']])
+            else:
+                return None
+
+        if len(selected_points) != len(point_ids):
+            return None
+
+        # numpy 배열로 변환
+        points = np.array(selected_points)
+
+        # parametric t 값 생성 (0부터 점 개수-1까지)
+        t = np.arange(len(points))
+
+        # x, y 좌표에 대해 각각 스플라인 보간
+        spline_x = interpolate.UnivariateSpline(t, points[:, 0], s=0)
+        spline_y = interpolate.UnivariateSpline(t, points[:, 1], s=0)
+
+        # 각 원본 점에서의 곡률 계산
+        curvatures = []
+        for i in range(len(points)):
+            # 1차, 2차 미분 계산
+            dx = spline_x.derivative(1)(i)
+            dy = spline_y.derivative(1)(i)
+            d2x = spline_x.derivative(2)(i)
+            d2y = spline_y.derivative(2)(i)
+
+            # 부호 있는 곡률 공식: (x'y'' - y'x'') / (x'^2 + y'^2)^(3/2)
+            # 양수: 위로 볼록(∩), 음수: 아래로 볼록(∪)
+            numerator = dx * d2y - dy * d2x
+            denominator = (dx**2 + dy**2)**(3/2)
+
+            if denominator == 0:
+                curvature = 0
+            else:
+                curvature = numerator / denominator
+
+            curvatures.append(curvature)
+
+        return curvatures
 
     except Exception as e:
         return None

@@ -7,11 +7,11 @@ import plotly.express as px
 import plotly.graph_objects as go
 import numpy as np
 import json
-from .landmark_calculator import calculate_length
+from .landmark_calculator import calculate_length, calculate_curvature
 
 
 def execute_length_based_analysis(landmarks_data, l1_p1, l1_p2, l1_calc, l2_p1, l2_p2, l2_calc, purpose,
-                                   normalize_ratio=False, swap_axes=False, enable_tag_highlight=False, selected_tags=None):
+                                   normalize_ratio=False, swap_axes=False, enable_tag_highlight=False, selected_tags=None, point_group=None):
     """길이 기반 분석 실행"""
     if selected_tags is None:
         selected_tags = []
@@ -45,52 +45,77 @@ def execute_length_based_analysis(landmarks_data, l1_p1, l1_p2, l1_calc, l2_p1, 
             else:
                 landmarks = row['landmarks']
 
-            # 길이1 계산
-            length1 = calculate_length(landmarks, l1_p1, l1_p2, l1_calc)
-            # 길이2 계산
-            length2 = calculate_length(landmarks, l2_p1, l2_p2, l2_calc)
+            if purpose == "🌊 곡률 분석":
+                # 곡률 분석: 점 그룹의 곡률 계산
+                curvatures = calculate_curvature(landmarks, point_group)
+                if curvatures is not None:
+                    # 곡률 분석에서는 각 점별로 곡률 데이터를 저장
+                    for i, curvature in enumerate(curvatures):
+                        length1_values.append(i)  # X축: 점 인덱스 (0, 1, 2, ...)
+                        length2_values.append(round(curvature, 4))  # Y축: 곡률값
+                        names.append(f"{row['name']}_점{i}")
+                        # 태그 정보 수집
+                        row_tags = []
+                        if 'tags' in row and row['tags']:
+                            row_tags = row['tags'] if isinstance(row['tags'], list) else []
+                        tags_list.append(', '.join(row_tags) if row_tags else '태그없음')
 
-            if length1 is not None and length2 is not None:
-                final_length1 = length1
-                final_length2 = length2
+                        # 색상 결정
+                        if enable_tag_highlight and selected_tags:
+                            matching_tags = [tag for tag in selected_tags if tag in row_tags]
+                            if matching_tags:
+                                color = tag_color_map.get(matching_tags[0], '#FF0000')
+                            else:
+                                color = '#808080'  # 회색으로 dimmed
+                        else:
+                            color = '#808080'  # 기본 회색
+                        colors.append(color)
+            else:
+                # 기존 길이/비율 계산
+                length1 = calculate_length(landmarks, l1_p1, l1_p2, l1_calc)
+                length2 = calculate_length(landmarks, l2_p1, l2_p2, l2_calc)
 
-                # 정규화 적용 (비율 계산이고 normalize_ratio가 True일 때)
-                if purpose == "⚖️ 비율 계산" and normalize_ratio and final_length1 != 0:
-                    # X축(길이1)을 1로 고정하고 Y축(길이2)을 비례적으로 스케일링
-                    scale_factor = final_length1
-                    final_length1 = 1.0
-                    final_length2 = final_length2 / scale_factor if scale_factor != 0 else 0
+                if length1 is not None and (length2 is not None or purpose == "📏 거리 측정"):
+                    final_length1 = length1
+                    final_length2 = length2 if length2 is not None else 0
 
-                # 소수점 둘째자리까지 반올림
-                final_length1 = round(final_length1, 2)
-                final_length2 = round(final_length2, 2)
+                    # 정규화 적용 (비율 계산이고 normalize_ratio가 True일 때)
+                    if purpose == "⚖️ 비율 계산" and normalize_ratio and final_length1 != 0:
+                        # X축(길이1)을 1로 고정하고 Y축(길이2)을 비례적으로 스케일링
+                        scale_factor = final_length1
+                        final_length1 = 1.0
+                        final_length2 = final_length2 / scale_factor if scale_factor != 0 else 0
 
-                # 태그 정보 수집
-                row_tags = []
-                if 'tags' in row and row['tags']:
-                    row_tags = row['tags'] if isinstance(row['tags'], list) else []
+                    # 소수점 둘째자리까지 반올림
+                    final_length1 = round(final_length1, 2)
+                    final_length2 = round(final_length2, 2)
 
-                # 색상 결정
-                if enable_tag_highlight and selected_tags:
-                    # 특정 태그들이 선택된 경우에만 색상 적용
-                    matching_tags = [tag for tag in selected_tags if tag in row_tags]
-                    if matching_tags:
-                        # 선택된 태그 중 첫 번째 매칭되는 태그의 색상 사용
-                        color = tag_color_map.get(matching_tags[0], '#FF0000')
-                        opacity = 1.0
+                    # 태그 정보 수집
+                    row_tags = []
+                    if 'tags' in row and row['tags']:
+                        row_tags = row['tags'] if isinstance(row['tags'], list) else []
+
+                    # 색상 결정
+                    if enable_tag_highlight and selected_tags:
+                        # 특정 태그들이 선택된 경우에만 색상 적용
+                        matching_tags = [tag for tag in selected_tags if tag in row_tags]
+                        if matching_tags:
+                            # 선택된 태그 중 첫 번째 매칭되는 태그의 색상 사용
+                            color = tag_color_map.get(matching_tags[0], '#FF0000')
+                            opacity = 1.0
+                        else:
+                            color = '#808080'  # 회색으로 dimmed
+                            opacity = 0.6
                     else:
-                        color = '#808080'  # 회색으로 dimmed
-                        opacity = 0.6
-                else:
-                    # 기본 회색 (태그 하이라이트 비활성화 또는 태그 미선택 시)
-                    color = '#808080'  # 회색
-                    opacity = 1.0
+                        # 기본 회색 (태그 하이라이트 비활성화 또는 태그 미선택 시)
+                        color = '#808080'  # 회색
+                        opacity = 1.0
 
-                length1_values.append(final_length1)
-                length2_values.append(final_length2)
-                names.append(row['name'])
-                tags_list.append(', '.join(row_tags) if row_tags else '태그없음')
-                colors.append(color)
+                    length1_values.append(final_length1)
+                    length2_values.append(final_length2)
+                    names.append(row['name'])
+                    tags_list.append(', '.join(row_tags) if row_tags else '태그없음')
+                    colors.append(color)
 
         except Exception as e:
             st.error(f"데이터 처리 오류 ({row['name']}): {e}")
@@ -116,7 +141,84 @@ def execute_length_based_analysis(landmarks_data, l1_p1, l1_p2, l1_calc, l2_p1, 
     col1, col2 = st.columns([2, 1])
 
     with col1:
-        if purpose == "⚖️ 비율 계산":
+        if purpose == "🌊 곡률 분석":
+            # 곡률 분석인 경우: X축 - 점 인덱스, Y축 - 곡률값의 선 그래프
+            title = f'곡률 분석 결과'
+            x_label = f'점 인덱스'
+            y_label = f'곡률 값'
+
+            if enable_tag_highlight:
+                fig = go.Figure()
+
+                # 각 얼굴별로 곡률 곡선을 그룹화
+                face_groups = {}
+                for idx, row in result_df.iterrows():
+                    face_name = row['name'].split('_점')[0]  # '_점N' 제거
+                    if face_name not in face_groups:
+                        face_groups[face_name] = {'x': [], 'y': [], 'color': row['color'], 'tags': ''}
+                    face_groups[face_name]['x'].append(row['length1'])
+                    face_groups[face_name]['y'].append(row['length2'])
+                    face_groups[face_name]['tags'] = row['tags']
+
+                # 각 얼굴별 곡률 곡선 추가
+                for face_name, data in face_groups.items():
+                    fig.add_trace(go.Scatter(
+                        x=data['x'],
+                        y=data['y'],
+                        mode='lines+markers',
+                        line=dict(color=data['color'], width=2),
+                        marker=dict(color=data['color'], size=6),
+                        name=face_name,
+                        hovertemplate=f"얼굴: {face_name}<br>태그: {data['tags']}<br>점 인덱스: %{{x}}<br>곡률: %{{y}}<extra></extra>"
+                    ))
+
+                # y=0 기준선 추가 (볼록/오목 구분)
+                fig.add_hline(y=0, line_dash="dash", line_color="gray",
+                             annotation_text="기준선 (y=0)", annotation_position="bottom right")
+
+                fig.update_layout(
+                    title=title,
+                    xaxis_title=x_label,
+                    yaxis_title=y_label + " (양수: ∩볼록, 음수: ∪오목)",
+                    showlegend=True
+                )
+            else:
+                # 기본 선 그래프 (태그 하이라이트 비활성화)
+                fig = go.Figure()
+
+                # 각 얼굴별로 곡률 곡선을 그룹화
+                face_groups = {}
+                for idx, row in result_df.iterrows():
+                    face_name = row['name'].split('_점')[0]
+                    if face_name not in face_groups:
+                        face_groups[face_name] = {'x': [], 'y': [], 'tags': ''}
+                    face_groups[face_name]['x'].append(row['length1'])
+                    face_groups[face_name]['y'].append(row['length2'])
+                    face_groups[face_name]['tags'] = row['tags']
+
+                for face_name, data in face_groups.items():
+                    fig.add_trace(go.Scatter(
+                        x=data['x'],
+                        y=data['y'],
+                        mode='lines+markers',
+                        line=dict(color='#808080', width=2),
+                        marker=dict(color='#808080', size=6),
+                        name=face_name,
+                        hovertemplate=f"얼굴: {face_name}<br>태그: {data['tags']}<br>점 인덱스: %{{x}}<br>곡률: %{{y}}<extra></extra>"
+                    ))
+
+                # y=0 기준선 추가 (볼록/오목 구분)
+                fig.add_hline(y=0, line_dash="dash", line_color="gray",
+                             annotation_text="기준선 (y=0)", annotation_position="bottom right")
+
+                fig.update_layout(
+                    title=title,
+                    xaxis_title=x_label,
+                    yaxis_title=y_label + " (양수: ∩볼록, 음수: ∪오목)",
+                    showlegend=True
+                )
+
+        elif purpose == "⚖️ 비율 계산":
             # 비율 계산인 경우: X축 - 길이1, Y축 - 길이2의 산점도
 
             # 축 바꾸기 적용
@@ -259,7 +361,14 @@ def execute_length_based_analysis(landmarks_data, l1_p1, l1_p2, l1_calc, l2_p1, 
                 st.info("💡 모든 점이 회색으로 표시됩니다. 특정 태그를 색상으로 하이라이트하려면 위에서 선택하세요.")
 
     with col2:
-        if purpose == "📏 거리 측정":
+        if purpose == "🌊 곡률 분석":
+            st.write("#### 📈 곡률 통계")
+            st.write(f"**평균:** {np.mean(length2_values):.4f}")
+            st.write(f"**표준편차:** {np.std(length2_values):.4f}")
+            st.write(f"**최소값:** {np.min(length2_values):.4f}")
+            st.write(f"**최대값:** {np.max(length2_values):.4f}")
+            st.write(f"**총 점 개수:** {len(length2_values)}개")
+        elif purpose == "📏 거리 측정":
             st.write("#### 📈 거리 통계")
             st.write(f"**평균:** {np.mean(length1_values):.2f}")
             st.write(f"**표준편차:** {np.std(length1_values):.2f}")
