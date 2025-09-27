@@ -242,5 +242,109 @@ class DatabaseManager:
                 'total_saved_configs': total_configs
             }
 
+    def sync_with_folder(self, folder_path="json_files"):
+        """json_files 폴더와 DB 동기화"""
+        from pathlib import Path
+        import json
+        from engines.ratio_parser import RatioParser
+
+        parser = RatioParser()
+        folder_path = Path(folder_path)
+
+        if not folder_path.exists():
+            return {"error": "json_files 폴더가 없습니다."}
+
+        # 폴더의 JSON 파일들
+        json_files = list(folder_path.glob("*.json"))
+        folder_files = set()
+
+        # JSON 파일들 읽기
+        valid_json_data = []
+        for file_path in json_files:
+            try:
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                    data['_filename'] = file_path.name
+                    name = data.get('name', file_path.stem)
+                    folder_files.add(name)
+                    valid_json_data.append((name, data))
+            except Exception:
+                continue
+
+        with self.get_session() as session:
+            # DB의 기존 데이터들
+            existing_records = session.query(FaceData).all()
+            db_names = {record.name: record for record in existing_records}
+
+            added_count = 0
+            updated_count = 0
+            deleted_count = 0
+
+            # 1. 새로운 파일들 추가 & 수정된 파일들 업데이트
+            for name, json_data in valid_json_data:
+                if name in db_names:
+                    # 기존 데이터 업데이트 (필요시)
+                    existing_record = db_names[name]
+                    # 간단히 태그만 업데이트
+                    tags = json_data.get('tags', [])
+                    # 기존 태그 삭제
+                    session.query(Tag).filter_by(face_data_id=existing_record.id).delete()
+                    # 새 태그 추가
+                    for tag in tags:
+                        tag_obj = Tag(face_data_id=existing_record.id, tag_name=tag)
+                        session.add(tag_obj)
+                    updated_count += 1
+                else:
+                    # 새 데이터 추가
+                    ratio_components = parser.parse_ratio_to_components(json_data.get('faceRatio', ''))
+
+                    face_data = FaceData(
+                        name=name,
+                        face_ratio_raw=json_data.get('faceRatio', ''),
+                        ratio_1=ratio_components.get('ratio_1'),
+                        ratio_2=ratio_components.get('ratio_2'),
+                        ratio_3=ratio_components.get('ratio_3'),
+                        ratio_4=ratio_components.get('ratio_4'),
+                        ratio_5=ratio_components.get('ratio_5'),
+                        ratio_2_1=ratio_components.get('ratio_2_1'),
+                        ratio_3_1=ratio_components.get('ratio_3_1'),
+                        ratio_3_2=ratio_components.get('ratio_3_2'),
+                        roll_angle=json_data.get('rollAngle', 0),
+                        ratios_detail=json.dumps(json_data.get('ratios', {})),
+                        landmarks=json.dumps(json_data.get('landmarks', [])),
+                        meta_data=json.dumps({
+                            'source_file': json_data.get('_filename', ''),
+                            'import_date': datetime.utcnow().isoformat()
+                        })
+                    )
+                    session.add(face_data)
+                    session.flush()  # ID 생성을 위해
+
+                    # 태그 추가
+                    for tag in json_data.get('tags', []):
+                        tag_obj = Tag(face_data_id=face_data.id, tag_name=tag)
+                        session.add(tag_obj)
+
+                    added_count += 1
+
+            # 2. 폴더에 없는 DB 데이터들 삭제
+            for db_name, record in db_names.items():
+                if db_name not in folder_files:
+                    # 관련 태그 먼저 삭제
+                    session.query(Tag).filter_by(face_data_id=record.id).delete()
+                    # 레코드 삭제
+                    session.delete(record)
+                    deleted_count += 1
+
+            session.commit()
+
+            return {
+                "added": added_count,
+                "updated": updated_count,
+                "deleted": deleted_count,
+                "total_files": len(folder_files),
+                "total_db_records": len(db_names) + added_count - deleted_count
+            }
+
 # 전역 데이터베이스 매니저 인스턴스
 db_manager = DatabaseManager()

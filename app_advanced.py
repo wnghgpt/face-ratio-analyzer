@@ -46,7 +46,6 @@ def get_tag_groups():
         "2차 - 눈": ['eye-인상-사나운', 'eye-인상-똘망똘망한', 'eye-인상-보통', 'eye-인상-순한', 'eye-인상-졸린', 'eye-미간-먼', 'eye-미간-보통', 'eye-미간-좁은', 'eye-모양-시원한', 'eye-모양-찢어진', 'eye-모양-보통', 'eye-모양-동그란', 'eye-모양-답답한', 'eye-크기-큰', 'eye-크기-보통', 'eye-크기-작은', 'eye-길이-긴', 'eye-길이-보통', 'eye-길이-짧은', 'eye-높이-높은', 'eye-높이-보통', 'eye-높이-낮은', 'eye-쌍꺼풀-없음', 'eye-쌍꺼풀-아웃', 'eye-쌍꺼풀-세미아웃', 'eye-쌍꺼풀-인아웃', 'eye-쌍꺼풀-인', 'eye-애교-많은', 'eye-애교-보통', 'eye-애교-적은', 'eye-눈밑지-심한', 'eye-눈밑지-약간', 'eye-눈밑지-없음', 'eye-동공-사백안', 'eye-동공-보통', 'eye-동공-삼백안', 'eye-동공-반가려짐'],
         "2차 - 코": ['nose-모양-화살코', 'nose-모양-보통', 'nose-모양-복코', 'nose-모양-들창코', 'nose-길이-긴', 'nose-길이-보통', 'nose-길이-짧은', 'nose-콧대-두꺼운', 'nose-콧대-보통', 'nose-콧대-얇은', 'nose-콧볼-넓은', 'nose-콧볼-보통', 'nose-콧볼-좁은', 'nose-코끝-넓은', 'nose-코끝-보통', 'nose-코끝-좁은', 'nose-콧구멍-넓은', 'nose-콧구멍-보통', 'nose-콧구멍-긴', 'nose-콧구멍-좁은'],
         "2차 - 입": ['mouth-너비-넓은', 'mouth-너비-보통', 'mouth-너비-좁은', 'mouth-두께-두꺼운', 'mouth-두께-보통', 'mouth-두께-얇은', 'mouth-입꼬리-올라간', 'mouth-입꼬리-평평한', 'mouth-입꼬리-내려간', 'mouth-위두께-두꺼운', 'mouth-위두께-보통', 'mouth-위두께-얇은', 'mouth-아래두께-두꺼운', 'mouth-아래두께-보통', 'mouth-아래두께-얇은', 'mouth-전체입술선-또렷', 'mouth-전체입술선-보통', 'mouth-전체입술선-흐릿', 'mouth-큐피드-또렷', 'mouth-큐피드-둥글', 'mouth-큐피드-1자', 'mouth-입술결절-뾰족', 'mouth-입술결절-1자', 'mouth-입술결절-함몰', 'mouth-위긴장도-있음', 'mouth-위긴장도-보통', 'mouth-위긴장도-없음', 'mouth-아래긴장도-있음', 'mouth-아래긴장도-보통', 'mouth-아래긴장도-없음', 'mouth-인중길이-짧아', 'mouth-인중길이-보통', 'mouth-인중길이-길어', 'mouth-인중너비-넓어', 'mouth-인중너비-보통', 'mouth-인중너비-좁아', 'mouth-팔자-깊은', 'mouth-팔자-보통', 'mouth-팔자-없음'],
-        "2차 - 직업연상": ['의사상', '교사상', '예술가상', '운동선수상', '연예인상'],
         "2차 - 윤곽": ['silhouette-얼굴형-달걀형', 'silhouette-얼굴형-역삼각형', 'silhouette-얼굴형-긴', 'silhouette-얼굴형-동글', 'silhouette-얼굴형-사각형', 'silhouette-옆광대-크기-큰', 'silhouette-옆광대-크기-보통', 'silhouette-옆광대-크기-작은', 'silhouette-옆광대-높이-높은', 'silhouette-옆광대-높이-보통', 'silhouette-옆광대-높이-낮은', 'silhouette-옆광대-위치-밖', 'silhouette-옆광대-위치-보통', 'silhouette-옆광대-위치-안', 'silhouette-앞광대-크기-큰', 'silhouette-앞광대-크기-보통', 'silhouette-앞광대-크기-작은', 'silhouette-앞광대-높이-높은', 'silhouette-앞광대-높이-보통', 'silhouette-앞광대-높이-낮은', 'silhouette-턱-발달-발달', 'silhouette-턱-발달-보통', 'silhouette-턱-발달-무턱', 'silhouette-턱-형태-뾰족한', 'silhouette-턱-형태-보통', 'silhouette-턱-형태-각진', 'silhouette-턱-길이-긴', 'silhouette-턱-길이-보통', 'silhouette-턱-길이-짧은', 'silhouette-볼-살-살X', 'silhouette-볼-살-보통', 'silhouette-볼-살-살O', 'silhouette-볼-탄력-쳐진', 'silhouette-볼-탄력-보통', 'silhouette-볼-탄력-탄력'],
     }
 
@@ -61,7 +60,7 @@ def main():
     landmarks_data = load_landmarks_data()
 
     # 탭 생성
-    tab1, tab2, tab3 = st.tabs(["🧮 좌표 분석", "🔗 태그 연관성 분석", "🌊 태그 관계도"])
+    tab1, tab2, tab3, tab4 = st.tabs(["🧮 좌표 분석", "🔗 태그 연관성 분석", "🌊 태그 관계도", "📊 태그-수치 분석"])
 
     with tab1:
         render_landmarks_analysis_tab(landmarks_data)
@@ -71,6 +70,9 @@ def main():
 
     with tab3:
         render_sankey_diagram_tab(landmarks_data)
+
+    with tab4:
+        render_tag_analysis_tab_new(landmarks_data)
 
 def render_landmarks_analysis_tab(landmarks_data):
     """좌표 분석 탭 렌더링"""
@@ -1531,6 +1533,446 @@ def create_sankey_diagram(relationships, selected_abstract_tag="전체", min_fre
             st.write(f"• {prim_tag} → {sec_tag}: {count}회")
 
 
+def render_tag_analysis_tab_new(landmarks_data):
+    """태그-수치 분석 탭 렌더링"""
+    st.header("📊 태그-수치 분석")
+    st.markdown("2차 태그와 실제 랜드마크 수치 간의 관계를 분석합니다.")
+
+    if landmarks_data.empty:
+        st.warning("💡 landmarks가 포함된 JSON 파일이 필요합니다.")
+        return
+
+    # 메인 페이지에 분석 모드 선택
+    st.write("### 🎯 분석 모드 선택")
+    analysis_mode = st.radio(
+        "분석 방식을 선택하세요:",
+        ["🎯 단일 태그 분석", "📊 레벨별 비교 분석"],
+        horizontal=True,
+        help="단일 태그: 특정 태그(예: eye-크기-큰)의 수치 분포 분석\n레벨별 비교: 같은 특성의 여러 레벨(큰/보통/작은) 비교"
+    )
+
+    # 사이드바 설정
+    st.sidebar.write("### 📊 측정 설정")
+
+    # 길이 측정 설정 (기존 코드 재활용)
+    col1, col2, col3 = st.sidebar.columns([1, 1, 1.2])
+
+    with col1:
+        length_point1 = st.sidebar.number_input(
+            "점1",
+            min_value=0,
+            max_value=500,
+            value=33,
+            key="tag_analysis_point1"
+        )
+
+    with col2:
+        length_point2 = st.sidebar.number_input(
+            "점2",
+            min_value=0,
+            max_value=500,
+            value=133,
+            key="tag_analysis_point2"
+        )
+
+    with col3:
+        calc_type = st.sidebar.selectbox(
+            "계산",
+            ["직선거리", "X좌표거리", "Y좌표거리"],
+            key="tag_analysis_calc"
+        )
+
+    if analysis_mode == "🎯 단일 태그 분석":
+        render_single_tag_analysis(landmarks_data, length_point1, length_point2, calc_type)
+    else:
+        render_level_comparison_analysis(landmarks_data, length_point1, length_point2, calc_type)
+
+
+def render_single_tag_analysis(landmarks_data, point1, point2, calc_type):
+    """단일 태그 분석 렌더링"""
+    # 모든 2차 태그 수집
+    all_secondary_tags = set()
+    tag_groups = get_tag_groups()
+
+    for group_name, tags in tag_groups.items():
+        if group_name.startswith("2차"):
+            all_secondary_tags.update(tags)
+
+    # 실제 데이터에 있는 태그만 필터링
+    available_tags = []
+    for tag in sorted(all_secondary_tags):
+        tag_count = 0
+        for _, row in landmarks_data.iterrows():
+            if 'tags' in row and row['tags']:
+                row_tags = row['tags'] if isinstance(row['tags'], list) else []
+                if tag in row_tags:
+                    tag_count += 1
+        if tag_count > 0:
+            available_tags.append(f"{tag} ({tag_count}개)")
+
+    if not available_tags:
+        st.warning("분석할 수 있는 2차 태그가 없습니다.")
+        return
+
+    # 태그 선택
+    selected_tag_with_count = st.selectbox(
+        "분석할 2차 태그를 선택하세요:",
+        available_tags,
+        help="괄호 안은 해당 태그를 가진 데이터 개수입니다."
+    )
+
+    selected_tag = selected_tag_with_count.split(' (')[0]
+
+    if st.button("🚀 분석 실행", key="single_tag_analysis"):
+        execute_single_tag_analysis(landmarks_data, selected_tag, point1, point2, calc_type)
+
+
+def render_level_comparison_analysis(landmarks_data, point1, point2, calc_type):
+    """레벨별 비교 분석 렌더링"""
+    # 특성별 그룹 찾기 (예: 눈-크기, 코-길이 등)
+    tag_groups = get_tag_groups()
+    feature_groups = {}
+
+    for group_name, tags in tag_groups.items():
+        if group_name.startswith("2차"):
+            for tag in tags:
+                # 태그에서 특성 추출 (예: "eye-크기-큰" → "eye-크기")
+                parts = tag.split('-')
+                if len(parts) >= 3:
+                    feature = f"{parts[0]}-{parts[1]}"
+                    level = parts[2]
+                    if feature not in feature_groups:
+                        feature_groups[feature] = []
+                    feature_groups[feature].append(level)
+
+    # 실제 데이터에 있는 특성만 필터링
+    available_features = []
+    for feature, levels in feature_groups.items():
+        # 해당 특성의 모든 레벨이 데이터에 있는지 확인
+        level_counts = {}
+        for level in levels:
+            tag = f"{feature}-{level}"
+            count = 0
+            for _, row in landmarks_data.iterrows():
+                if 'tags' in row and row['tags']:
+                    row_tags = row['tags'] if isinstance(row['tags'], list) else []
+                    if tag in row_tags:
+                        count += 1
+            level_counts[level] = count
+
+        # 최소 2개 레벨에 데이터가 있어야 비교 가능
+        valid_levels = [level for level, count in level_counts.items() if count > 0]
+        if len(valid_levels) >= 2:
+            total_count = sum(level_counts.values())
+            available_features.append(f"{feature} ({total_count}개)")
+
+    if not available_features:
+        st.warning("비교 분석할 수 있는 특성이 없습니다. (최소 2개 레벨에 데이터가 있어야 합니다)")
+        return
+
+    # 특성 선택
+    selected_feature_with_count = st.selectbox(
+        "비교 분석할 특성을 선택하세요:",
+        available_features,
+        help="같은 특성의 여러 레벨(큰/보통/작은 등)을 비교 분석합니다."
+    )
+
+    selected_feature = selected_feature_with_count.split(' (')[0]
+
+    if st.button("🚀 비교 분석 실행", key="level_comparison_analysis"):
+        execute_level_comparison_analysis(landmarks_data, selected_feature, point1, point2, calc_type)
+
+
+def execute_single_tag_analysis(landmarks_data, selected_tag, point1, point2, calc_type):
+    """단일 태그 분석 실행"""
+    st.write("### 🔄 분석 실행 중...")
+
+    # 선택된 태그를 가진 데이터 필터링
+    tag_data = []
+    all_data = []
+    names_with_tag = []
+    names_all = []
+
+    for _, row in landmarks_data.iterrows():
+        try:
+            # 랜드마크 데이터 파싱
+            if isinstance(row['landmarks'], str):
+                landmarks = json.loads(row['landmarks'])
+            else:
+                landmarks = row['landmarks']
+
+            # 측정값 계산
+            measurement = calculate_length(landmarks, point1, point2, calc_type)
+
+            if measurement is not None:
+                all_data.append(measurement)
+                names_all.append(row['name'])
+
+                # 선택된 태그를 가진 데이터인지 확인
+                if 'tags' in row and row['tags']:
+                    row_tags = row['tags'] if isinstance(row['tags'], list) else []
+                    if selected_tag in row_tags:
+                        tag_data.append(measurement)
+                        names_with_tag.append(row['name'])
+
+        except Exception as e:
+            continue
+
+    if not tag_data:
+        st.error(f"'{selected_tag}' 태그를 가진 데이터가 없습니다.")
+        return
+
+    # 통계 계산
+    tag_mean = np.mean(tag_data)
+    tag_std = np.std(tag_data)
+    tag_q1, tag_q3 = np.percentile(tag_data, [25, 75])
+
+    all_mean = np.mean(all_data)
+    all_std = np.std(all_data)
+
+    # 경계값 제안 (Q1 기준)
+    boundary_suggestion = tag_q1
+
+    # 결과 표시
+    st.write("### 📊 분석 결과")
+
+    # 상단 메트릭
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        st.metric("분석 태그", selected_tag)
+    with col2:
+        st.metric("태그 데이터", f"{len(tag_data)}개")
+    with col3:
+        st.metric("전체 데이터", f"{len(all_data)}개")
+    with col4:
+        st.metric("제안 경계값", f"{boundary_suggestion:.1f}")
+
+    # 박스플롯 생성
+    col1, col2 = st.columns([2, 1])
+
+    with col1:
+        # 데이터 준비
+        plot_data = []
+        for val in tag_data:
+            plot_data.append({'value': val, 'group': f'{selected_tag} ({len(tag_data)}개)'})
+        for val in all_data:
+            plot_data.append({'value': val, 'group': f'전체 데이터 ({len(all_data)}개)'})
+
+        plot_df = pd.DataFrame(plot_data)
+
+        fig = px.box(
+            plot_df,
+            x='group',
+            y='value',
+            title=f'{selected_tag} vs 전체 데이터 분포',
+            labels={'value': f'측정값 ({calc_type})', 'group': '그룹'}
+        )
+
+        # 경계선 추가
+        fig.add_hline(y=boundary_suggestion, line_dash="dash", line_color="red",
+                     annotation_text=f"제안 경계값: {boundary_suggestion:.1f}")
+
+        st.plotly_chart(fig, use_container_width=True)
+
+    with col2:
+        st.write("#### 📈 태그 그룹 통계")
+        st.write(f"**평균:** {tag_mean:.2f}")
+        st.write(f"**표준편차:** {tag_std:.2f}")
+        st.write(f"**Q1:** {tag_q1:.2f}")
+        st.write(f"**Q3:** {tag_q3:.2f}")
+
+        st.write("#### 📈 전체 데이터 통계")
+        st.write(f"**평균:** {all_mean:.2f}")
+        st.write(f"**표준편차:** {all_std:.2f}")
+
+        # 차이 분석
+        mean_diff = tag_mean - all_mean
+        st.write("#### 🔍 차이 분석")
+        st.write(f"**평균 차이:** {mean_diff:+.2f}")
+
+        if abs(mean_diff) > all_std:
+            st.success("✅ 의미있는 차이 (1σ 이상)")
+        else:
+            st.warning("⚠️ 작은 차이 (1σ 미만)")
+
+    # 경계값 제안
+    st.write("### 🎯 경계값 제안")
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+        st.write("**보수적 기준 (Q1)**")
+        st.write(f"{tag_q1:.1f} 이상")
+        st.write(f"정확도: ~75%")
+
+    with col2:
+        st.write("**중간 기준 (평균)**")
+        st.write(f"{tag_mean:.1f} 이상")
+        st.write(f"정확도: ~50%")
+
+    with col3:
+        st.write("**관대한 기준 (Q3)**")
+        st.write(f"{tag_q3:.1f} 이상")
+        st.write(f"정확도: ~25%")
+
+    # 상세 데이터
+    with st.expander("📋 상세 데이터 보기"):
+        detail_df = pd.DataFrame({
+            '파일명': names_with_tag,
+            '측정값': tag_data
+        })
+        detail_df = detail_df.sort_values('측정값', ascending=False)
+        st.dataframe(detail_df, use_container_width=True)
+
+
+def execute_level_comparison_analysis(landmarks_data, selected_feature, point1, point2, calc_type):
+    """레벨별 비교 분석 실행"""
+    st.write("### 🔄 비교 분석 실행 중...")
+
+    # 해당 특성의 모든 레벨 태그 찾기
+    tag_groups = get_tag_groups()
+    feature_levels = {}
+
+    for group_name, tags in tag_groups.items():
+        if group_name.startswith("2차"):
+            for tag in tags:
+                if tag.startswith(selected_feature + "-"):
+                    level = tag.split('-')[-1]
+                    feature_levels[level] = tag
+
+    # 각 레벨별 데이터 수집
+    level_data = {}
+    level_names = {}
+
+    for level, full_tag in feature_levels.items():
+        level_data[level] = []
+        level_names[level] = []
+
+        for _, row in landmarks_data.iterrows():
+            try:
+                # 랜드마크 데이터 파싱
+                if isinstance(row['landmarks'], str):
+                    landmarks = json.loads(row['landmarks'])
+                else:
+                    landmarks = row['landmarks']
+
+                # 측정값 계산
+                measurement = calculate_length(landmarks, point1, point2, calc_type)
+
+                if measurement is not None:
+                    # 해당 레벨 태그를 가진 데이터인지 확인
+                    if 'tags' in row and row['tags']:
+                        row_tags = row['tags'] if isinstance(row['tags'], list) else []
+                        if full_tag in row_tags:
+                            level_data[level].append(measurement)
+                            level_names[level].append(row['name'])
+
+            except Exception as e:
+                continue
+
+    # 데이터가 있는 레벨만 필터링
+    valid_levels = {level: data for level, data in level_data.items() if len(data) > 0}
+
+    if len(valid_levels) < 2:
+        st.error("비교할 수 있는 레벨이 부족합니다. (최소 2개 레벨 필요)")
+        return
+
+    # 결과 표시
+    st.write("### 📊 레벨별 비교 결과")
+
+    # 상단 메트릭
+    cols = st.columns(len(valid_levels))
+    level_stats = {}
+
+    for i, (level, data) in enumerate(valid_levels.items()):
+        level_mean = np.mean(data)
+        level_stats[level] = {
+            'mean': level_mean,
+            'std': np.std(data),
+            'q1': np.percentile(data, 25),
+            'q3': np.percentile(data, 75),
+            'count': len(data)
+        }
+
+        with cols[i]:
+            st.metric(
+                level,
+                f"평균 {level_mean:.1f}",
+                f"{len(data)}개"
+            )
+
+    # 박스플롯 생성
+    col1, col2 = st.columns([2, 1])
+
+    with col1:
+        # 데이터 준비
+        plot_data = []
+        for level, data in valid_levels.items():
+            for val in data:
+                plot_data.append({
+                    'value': val,
+                    'level': f'{level} ({len(data)}개)'
+                })
+
+        plot_df = pd.DataFrame(plot_data)
+
+        fig = px.box(
+            plot_df,
+            x='level',
+            y='value',
+            title=f'{selected_feature} 레벨별 분포 비교',
+            labels={'value': f'측정값 ({calc_type})', 'level': '레벨'}
+        )
+
+        st.plotly_chart(fig, use_container_width=True)
+
+    with col2:
+        st.write("#### 📈 레벨별 통계")
+        for level, stats in level_stats.items():
+            st.write(f"**{level}**")
+            st.write(f"평균: {stats['mean']:.2f}")
+            st.write(f"Q1-Q3: {stats['q1']:.1f} - {stats['q3']:.1f}")
+            st.write("---")
+
+    # 경계값 제안
+    st.write("### 🎯 레벨별 경계값 제안")
+
+    # 레벨을 평균값 순으로 정렬
+    sorted_levels = sorted(level_stats.items(), key=lambda x: x[1]['mean'])
+
+    if len(sorted_levels) >= 2:
+        # 인접한 레벨 간 경계값 계산
+        boundaries = []
+        for i in range(len(sorted_levels) - 1):
+            level1_name, level1_stats = sorted_levels[i]
+            level2_name, level2_stats = sorted_levels[i + 1]
+
+            # 중간값으로 경계 설정
+            boundary = (level1_stats['q3'] + level2_stats['q1']) / 2
+            boundaries.append({
+                'lower_level': level1_name,
+                'upper_level': level2_name,
+                'boundary': boundary
+            })
+
+        for boundary_info in boundaries:
+            st.write(f"**{boundary_info['lower_level']} vs {boundary_info['upper_level']}**")
+            st.write(f"제안 경계값: {boundary_info['boundary']:.1f}")
+            st.write(f"• {boundary_info['boundary']:.1f} 미만: {boundary_info['lower_level']}")
+            st.write(f"• {boundary_info['boundary']:.1f} 이상: {boundary_info['upper_level']}")
+            st.write("---")
+
+    # 상세 데이터
+    with st.expander("📋 레벨별 상세 데이터"):
+        for level, data in valid_levels.items():
+            st.write(f"#### {level} 레벨")
+            detail_df = pd.DataFrame({
+                '파일명': level_names[level],
+                '측정값': data
+            })
+            detail_df = detail_df.sort_values('측정값', ascending=False)
+            st.dataframe(detail_df, use_container_width=True)
+
+
 def render_database_management_sidebar():
     """사이드바에 데이터베이스 관리 기능 렌더링"""
     st.sidebar.write("### 🗄️ 데이터베이스 관리")
@@ -1551,70 +1993,35 @@ def render_database_management_sidebar():
                     st.write(f"... 외 {len(json_files) - 5}개")
 
             # 데이터베이스 추가 버튼
-            if st.sidebar.button("🔄 데이터베이스에 추가",
-                               help="json_files/ 폴더의 파일들을 데이터베이스에 영구 저장합니다."):
+            if st.sidebar.button("🔄 폴더-DB 동기화",
+                               help="json_files/ 폴더와 데이터베이스를 완전히 동기화합니다. (추가/수정/삭제 자동 처리)"):
 
-                with st.spinner("데이터베이스에 추가 중..."):
+                with st.spinner("폴더와 DB 동기화 중..."):
                     try:
-                        # JSON 파일들 로드
-                        json_data_list = []
-                        failed_files = []
+                        # 새로운 동기화 시스템 사용
+                        sync_result = db_manager.sync_with_folder("json_files")
 
-                        for file_path in json_files:
-                            try:
-                                with open(file_path, 'r', encoding='utf-8') as f:
-                                    json_data = json.load(f)
-                                    # 파일명 추가 (추적용)
-                                    json_data['_filename'] = file_path.name
-                                    json_data_list.append(json_data)
-                            except Exception as e:
-                                failed_files.append(f"{file_path.name}: {e}")
-                                st.sidebar.error(f"파일 읽기 오류 {file_path.name}: {e}")
-
-                        # 데이터베이스에 추가
-                        if json_data_list:
-                            # 임포트 전 카운트
-                            initial_count = len(json_data_list)
-
-                            # 임포트 실행
-                            import_result = db_manager.import_json_data(json_data_list)
-
-                            # 결과 표시
-                            st.sidebar.success(f"✅ 처리 완료!")
-                            st.sidebar.info(f"📥 읽기 성공: {initial_count}개")
-
-                            if failed_files:
-                                st.sidebar.warning(f"❌ 읽기 실패: {len(failed_files)}개")
-                                with st.sidebar.expander("실패한 파일들"):
-                                    for failed_file in failed_files:
-                                        st.write(f"• {failed_file}")
-
-                            # 중복 체크 정보도 표시하면 좋을 것 같습니다
-                            st.sidebar.info(f"💡 중복된 이름의 파일은 자동으로 건너뜁니다.")
-
-                            # 처리된 파일들을 processed 폴더로 이동 (선택사항)
-                            processed_path = json_files_path / "processed"
-                            processed_path.mkdir(exist_ok=True)
-
-                            moved_count = 0
-                            for file_path in json_files:
-                                try:
-                                    import shutil
-                                    shutil.move(str(file_path), str(processed_path / file_path.name))
-                                    moved_count += 1
-                                except Exception as e:
-                                    st.sidebar.warning(f"파일 이동 실패 {file_path.name}: {e}")
-
-                            if moved_count > 0:
-                                st.sidebar.info(f"📦 {moved_count}개 파일이 `json_files/processed/`로 이동되었습니다.")
-
-                            # 페이지 새로고침을 위한 hint
-                            st.sidebar.info("💡 변경사항을 확인하려면 페이지를 새로고침하세요.")
+                        if "error" in sync_result:
+                            st.sidebar.error(sync_result["error"])
                         else:
-                            st.sidebar.warning("처리할 수 있는 파일이 없습니다.")
+                            # 결과 표시
+                            st.sidebar.success(f"🔄 동기화 완료!")
+
+                            col1, col2 = st.sidebar.columns(2)
+                            with col1:
+                                st.metric("➕ 추가", sync_result["added"], delta=sync_result["added"] if sync_result["added"] > 0 else None)
+                                st.metric("✏️ 수정", sync_result["updated"], delta=sync_result["updated"] if sync_result["updated"] > 0 else None)
+                            with col2:
+                                st.metric("🗑️ 삭제", sync_result["deleted"], delta=-sync_result["deleted"] if sync_result["deleted"] > 0 else None)
+                                st.metric("📁 총 파일", sync_result["total_files"])
+
+                            if sync_result["added"] + sync_result["updated"] + sync_result["deleted"] == 0:
+                                st.sidebar.info("📌 모든 데이터가 이미 동기화되어 있습니다.")
+                            else:
+                                st.sidebar.info("✨ json_files 폴더와 DB가 완전히 동기화되었습니다!")
 
                     except Exception as e:
-                        st.sidebar.error(f"데이터베이스 추가 중 오류 발생: {e}")
+                        st.sidebar.error(f"동기화 중 오류 발생: {e}")
         else:
             st.sidebar.info("📭 `json_files/` 폴더가 비어있습니다.")
     else:
