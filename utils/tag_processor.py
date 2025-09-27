@@ -176,7 +176,7 @@ def execute_single_tag_analysis(landmarks_data, selected_tag, point1, point2, ca
     with col3:
         st.metric("전체 데이터", f"{len(all_data)}개")
     with col4:
-        st.metric("제안 경계값", f"{boundary_suggestion:.1f}")
+        st.metric("제안 경계값", f"{boundary_suggestion:.2f}")
 
     # 박스플롯 생성
     col1, col2 = st.columns([2, 1])
@@ -201,19 +201,19 @@ def execute_single_tag_analysis(landmarks_data, selected_tag, point1, point2, ca
 
         # 경계선 추가
         fig.add_hline(y=boundary_suggestion, line_dash="dash", line_color="red",
-                     annotation_text=f"제안 경계값: {boundary_suggestion:.1f}")
+                     annotation_text=f"제안 경계값: {boundary_suggestion:.2f}")
 
         st.plotly_chart(fig, use_container_width=True)
 
     with col2:
         st.write("#### 📈 태그 그룹 통계")
-        st.write(f"**평균:** {tag_mean:.2f}")
+        st.write(f"**평균:** {tag_mean:.3f}")
         st.write(f"**표준편차:** {tag_std:.2f}")
         st.write(f"**Q1:** {tag_q1:.2f}")
         st.write(f"**Q3:** {tag_q3:.2f}")
 
         st.write("#### 📈 전체 데이터 통계")
-        st.write(f"**평균:** {all_mean:.2f}")
+        st.write(f"**평균:** {all_mean:.3f}")
         st.write(f"**표준편차:** {all_std:.2f}")
 
         # 차이 분석
@@ -232,17 +232,17 @@ def execute_single_tag_analysis(landmarks_data, selected_tag, point1, point2, ca
 
     with col1:
         st.write("**보수적 기준 (Q1)**")
-        st.write(f"{tag_q1:.1f} 이상")
+        st.write(f"{tag_q1:.2f} 이상")
         st.write(f"정확도: ~75%")
 
     with col2:
         st.write("**중간 기준 (평균)**")
-        st.write(f"{tag_mean:.1f} 이상")
+        st.write(f"{tag_mean:.2f} 이상")
         st.write(f"정확도: ~50%")
 
     with col3:
         st.write("**관대한 기준 (Q3)**")
-        st.write(f"{tag_q3:.1f} 이상")
+        st.write(f"{tag_q3:.2f} 이상")
         st.write(f"정확도: ~25%")
 
     # 상세 데이터
@@ -253,6 +253,143 @@ def execute_single_tag_analysis(landmarks_data, selected_tag, point1, point2, ca
         })
         detail_df = detail_df.sort_values('측정값', ascending=False)
         st.dataframe(detail_df, use_container_width=True)
+
+
+def execute_level_comparison_analysis_ratio(landmarks_data, selected_feature, point1, point2, calc_type1, point3, point4, calc_type2):
+    """레벨별 비교 분석 실행 (비율 계산)"""
+    st.write("### 🔄 비교 분석 실행 중... (비율 계산)")
+
+    # 해당 특성의 모든 레벨 태그 찾기
+    tag_groups = get_tag_groups()
+    feature_levels = {}
+
+    for group_name, tags in tag_groups.items():
+        if group_name.startswith("2차"):
+            for tag in tags:
+                if tag.startswith(selected_feature + "-"):
+                    level = tag.split('-')[-1]
+                    feature_levels[level] = tag
+
+    # 각 레벨별 데이터 수집
+    level_data = {}
+    level_names = {}
+
+    for level, full_tag in feature_levels.items():
+        level_data[level] = []
+        level_names[level] = []
+
+        for _, row in landmarks_data.iterrows():
+            try:
+                # 랜드마크 데이터 파싱
+                if isinstance(row['landmarks'], str):
+                    landmarks = json.loads(row['landmarks'])
+                else:
+                    landmarks = row['landmarks']
+
+                # 분자 길이 계산
+                numerator = calculate_length(landmarks, point1, point2, calc_type1)
+                # 분모 길이 계산
+                denominator = calculate_length(landmarks, point3, point4, calc_type2)
+
+                if numerator is not None and denominator is not None and denominator != 0:
+                    # 비율 계산
+                    ratio = numerator / denominator
+
+                    # 해당 레벨 태그를 가진 데이터인지 확인
+                    if 'tags' in row and row['tags']:
+                        row_tags = row['tags'] if isinstance(row['tags'], list) else []
+                        if full_tag in row_tags:
+                            level_data[level].append(ratio)
+                            level_names[level].append(row['name'])
+
+            except Exception as e:
+                continue
+
+    # 데이터가 있는 레벨만 필터링
+    valid_levels = {level: data for level, data in level_data.items() if len(data) > 0}
+
+    if len(valid_levels) < 2:
+        st.error("비교할 수 있는 레벨이 부족합니다. (최소 2개 레벨 필요)")
+        return
+
+    # 결과 표시
+    st.write("### 📊 레벨별 비교 결과 (비율)")
+
+    # 레벨별 통계 계산
+    level_stats = {}
+
+    for level, data in valid_levels.items():
+        level_mean = np.mean(data)
+        level_stats[level] = {
+            'mean': level_mean,
+            'std': np.std(data),
+            'q1': np.percentile(data, 25),
+            'q3': np.percentile(data, 75),
+            'count': len(data)
+        }
+
+    # 박스플롯 생성
+    col1, col2 = st.columns([2, 1])
+
+    with col1:
+        # 데이터 준비
+        plot_data = []
+        for level, data in valid_levels.items():
+            for val in data:
+                plot_data.append({
+                    'value': val,
+                    'level': f'{level} ({len(data)}개)'
+                })
+
+        plot_df = pd.DataFrame(plot_data)
+
+        fig = px.box(
+            plot_df,
+            x='level',
+            y='value',
+            title=f'{selected_feature} 레벨별 비율 분포 비교',
+            labels={'value': f'비율 ({calc_type1}/{calc_type2})', 'level': '레벨'}
+        )
+
+        st.plotly_chart(fig, use_container_width=True)
+
+    with col2:
+        st.write("#### 📈 레벨별 통계")
+        for level, stats in level_stats.items():
+            st.write(f"**{level} ({stats['count']}개)**")
+            st.write(f"평균: {stats['mean']:.3f}")
+            st.write(f"Q1-Q3: {stats['q1']:.2f} - {stats['q3']:.2f}")
+            st.write("---")
+
+        # 경계값 제안 오른쪽 사이드로 이동
+        st.write("#### 🎯 경계값 제안")
+
+        # 레벨을 평균값 순으로 정렬
+        sorted_levels = sorted(level_stats.items(), key=lambda x: x[1]['mean'])
+
+        if len(sorted_levels) >= 2:
+            # 인접한 레벨 간 경계값 계산
+            for i in range(len(sorted_levels) - 1):
+                level1_name, level1_stats = sorted_levels[i]
+                level2_name, level2_stats = sorted_levels[i + 1]
+
+                # 중간값으로 경계 설정
+                boundary = (level1_stats['q3'] + level2_stats['q1']) / 2
+
+                st.write(f"**{level1_name} ↔ {level2_name}**")
+                st.write(f"{boundary:.2f}")
+                st.write("---")
+
+    # 상세 데이터
+    with st.expander("📋 레벨별 상세 데이터"):
+        for level, data in valid_levels.items():
+            st.write(f"#### {level} 레벨")
+            detail_df = pd.DataFrame({
+                '파일명': level_names[level],
+                '비율값': data
+            })
+            detail_df = detail_df.sort_values('비율값', ascending=False)
+            st.dataframe(detail_df, use_container_width=True)
 
 
 def execute_level_comparison_analysis(landmarks_data, selected_feature, point1, point2, calc_type):
@@ -310,11 +447,10 @@ def execute_level_comparison_analysis(landmarks_data, selected_feature, point1, 
     # 결과 표시
     st.write("### 📊 레벨별 비교 결과")
 
-    # 상단 메트릭
-    cols = st.columns(len(valid_levels))
+    # 레벨별 통계 계산
     level_stats = {}
 
-    for i, (level, data) in enumerate(valid_levels.items()):
+    for level, data in valid_levels.items():
         level_mean = np.mean(data)
         level_stats[level] = {
             'mean': level_mean,
@@ -323,13 +459,6 @@ def execute_level_comparison_analysis(landmarks_data, selected_feature, point1, 
             'q3': np.percentile(data, 75),
             'count': len(data)
         }
-
-        with cols[i]:
-            st.metric(
-                level,
-                f"평균 {level_mean:.1f}",
-                f"{len(data)}개"
-            )
 
     # 박스플롯 생성
     col1, col2 = st.columns([2, 1])
@@ -359,38 +488,30 @@ def execute_level_comparison_analysis(landmarks_data, selected_feature, point1, 
     with col2:
         st.write("#### 📈 레벨별 통계")
         for level, stats in level_stats.items():
-            st.write(f"**{level}**")
-            st.write(f"평균: {stats['mean']:.2f}")
-            st.write(f"Q1-Q3: {stats['q1']:.1f} - {stats['q3']:.1f}")
+            st.write(f"**{level} ({stats['count']}개)**")
+            st.write(f"평균: {stats['mean']:.3f}")
+            st.write(f"Q1-Q3: {stats['q1']:.2f} - {stats['q3']:.2f}")
             st.write("---")
 
-    # 경계값 제안
-    st.write("### 🎯 레벨별 경계값 제안")
+        # 경계값 제안 오른쪽 사이드로 이동
+        st.write("#### 🎯 경계값 제안")
 
-    # 레벨을 평균값 순으로 정렬
-    sorted_levels = sorted(level_stats.items(), key=lambda x: x[1]['mean'])
+        # 레벨을 평균값 순으로 정렬
+        sorted_levels = sorted(level_stats.items(), key=lambda x: x[1]['mean'])
 
-    if len(sorted_levels) >= 2:
-        # 인접한 레벨 간 경계값 계산
-        boundaries = []
-        for i in range(len(sorted_levels) - 1):
-            level1_name, level1_stats = sorted_levels[i]
-            level2_name, level2_stats = sorted_levels[i + 1]
+        if len(sorted_levels) >= 2:
+            # 인접한 레벨 간 경계값 계산
+            for i in range(len(sorted_levels) - 1):
+                level1_name, level1_stats = sorted_levels[i]
+                level2_name, level2_stats = sorted_levels[i + 1]
 
-            # 중간값으로 경계 설정
-            boundary = (level1_stats['q3'] + level2_stats['q1']) / 2
-            boundaries.append({
-                'lower_level': level1_name,
-                'upper_level': level2_name,
-                'boundary': boundary
-            })
+                # 중간값으로 경계 설정
+                boundary = (level1_stats['q3'] + level2_stats['q1']) / 2
 
-        for boundary_info in boundaries:
-            st.write(f"**{boundary_info['lower_level']} vs {boundary_info['upper_level']}**")
-            st.write(f"제안 경계값: {boundary_info['boundary']:.1f}")
-            st.write(f"• {boundary_info['boundary']:.1f} 미만: {boundary_info['lower_level']}")
-            st.write(f"• {boundary_info['boundary']:.1f} 이상: {boundary_info['upper_level']}")
-            st.write("---")
+                st.write(f"**{level1_name} ↔ {level2_name}**")
+                st.write(f"{boundary:.2f}")
+                st.write("---")
+
 
     # 상세 데이터
     with st.expander("📋 레벨별 상세 데이터"):

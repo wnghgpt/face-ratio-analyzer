@@ -23,7 +23,8 @@ from utils.tag_processor import (
     get_tag_groups,
     analyze_tag_relationships,
     execute_single_tag_analysis,
-    execute_level_comparison_analysis
+    execute_level_comparison_analysis,
+    execute_level_comparison_analysis_ratio
 )
 from utils.visualization import create_sankey_diagram
 
@@ -420,9 +421,9 @@ def render_single_tag_analysis(landmarks_data, point1, point2, calc_type):
     # 측정 설정
     col1, col2, col3 = st.columns(3)
     with col1:
-        point1 = st.number_input("측정점 1", min_value=0, max_value=491, value=point1)
+        point1 = st.number_input("측정점 1", min_value=0, max_value=491, value=point1, step=1, format="%d")
     with col2:
-        point2 = st.number_input("측정점 2", min_value=0, max_value=491, value=point2)
+        point2 = st.number_input("측정점 2", min_value=0, max_value=491, value=point2, step=1, format="%d")
     with col3:
         calc_type = st.selectbox("계산 방식", ["직선거리", "X좌표거리", "Y좌표거리"], index=0)
 
@@ -435,7 +436,7 @@ def render_level_comparison_analysis(landmarks_data, point1, point2, calc_type):
     st.write("### 📊 레벨별 비교 분석")
     st.write("2차 태그의 서로 다른 레벨 간 측정값을 비교합니다.")
 
-    # 2차 태그에서 특성 추출
+    # 2차 태그에서 특성 추출 (부위-측정값 형태로)
     tag_groups = get_tag_groups()
     features = set()
 
@@ -444,31 +445,69 @@ def render_level_comparison_analysis(landmarks_data, point1, point2, calc_type):
             for tag in tags:
                 if '-' in tag:
                     parts = tag.split('-')
-                    if len(parts) >= 2:
-                        feature = parts[1]  # 예: eye-크기-큰 -> 크기
+                    if len(parts) >= 3:  # 부위-측정값-레벨 형태
+                        feature = f"{parts[0]}-{parts[1]}"  # 예: eye-크기-큰 -> eye-크기
                         features.add(feature)
 
     if not features:
         st.warning("비교할 2차 태그 특성이 없습니다.")
         return
 
-    # 특성 선택
-    selected_feature = st.selectbox(
-        "비교할 특성 선택:",
-        sorted(list(features))
-    )
-
-    # 측정 설정
-    col1, col2, col3 = st.columns(3)
+    # 특성 선택과 측정 방식을 같은 줄에
+    col1, col2 = st.columns(2)
     with col1:
-        point1 = st.number_input("측정점 1", min_value=0, max_value=491, value=point1, key="level_p1")
+        selected_feature = st.selectbox(
+            "비교할 특성:",
+            sorted(list(features))
+        )
     with col2:
-        point2 = st.number_input("측정점 2", min_value=0, max_value=491, value=point2, key="level_p2")
-    with col3:
-        calc_type = st.selectbox("계산 방식", ["직선거리", "X좌표거리", "Y좌표거리"], index=0, key="level_calc")
+        measurement_type = st.selectbox(
+            "측정방식:",
+            ["단순 길이", "비율 계산"],
+            index=0,
+            key="level_measurement_type"
+        )
 
-    if st.button("레벨별 비교 분석 실행"):
-        execute_level_comparison_analysis(landmarks_data, selected_feature, point1, point2, calc_type)
+    if measurement_type == "단순 길이":
+        col1, col2, col3, col4 = st.columns([2, 2, 2, 1])
+        with col1:
+            point1 = st.number_input("측정점 1", min_value=0, max_value=491, value=point1, key="level_p1", step=1, format="%d")
+        with col2:
+            point2 = st.number_input("측정점 2", min_value=0, max_value=491, value=point2, key="level_p2", step=1, format="%d")
+        with col3:
+            calc_type = st.selectbox("계산 방식", ["직선거리", "X좌표거리", "Y좌표거리"], index=0, key="level_calc")
+        with col4:
+            st.write("")  # 빈 공간
+            if st.button("실행", key="level_simple_exec"):
+                execute_level_comparison_analysis(landmarks_data, selected_feature, point1, point2, calc_type)
+
+    else:  # 비율 계산
+        # 분모와 분자를 한 줄에 배치
+        col1, col2, col3, col4, col5, col6, col7, col8 = st.columns([1, 1, 1, 0.5, 1, 1, 1, 1])
+
+        # 분모 설정
+        with col1:
+            point3 = st.number_input("분모-점1", min_value=0, max_value=491, value=33, key="level_p3_den", step=1, format="%d")
+        with col2:
+            point4 = st.number_input("분모-점2", min_value=0, max_value=491, value=263, key="level_p4_den", step=1, format="%d")
+        with col3:
+            calc_type2 = st.selectbox("분모-방식", ["직선거리", "X좌표거리", "Y좌표거리"], index=0, key="level_calc_den")
+
+        with col4:
+            st.write("**÷**")
+
+        # 분자 설정
+        with col5:
+            point1 = st.number_input("분자-점1", min_value=0, max_value=491, value=point1, key="level_p1_num", step=1, format="%d")
+        with col6:
+            point2 = st.number_input("분자-점2", min_value=0, max_value=491, value=point2, key="level_p2_num", step=1, format="%d")
+        with col7:
+            calc_type1 = st.selectbox("분자-방식", ["직선거리", "X좌표거리", "Y좌표거리"], index=0, key="level_calc_num")
+
+        with col8:
+            st.write("")  # 빈 공간
+            if st.button("실행", key="level_ratio_exec"):
+                execute_level_comparison_analysis_ratio(landmarks_data, selected_feature, point1, point2, calc_type1, point3, point4, calc_type2)
 
 
 def render_database_management_sidebar():
