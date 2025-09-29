@@ -14,7 +14,7 @@ from collections import Counter
 from itertools import combinations
 
 # Database
-from database.db_manager import db_manager
+from database.connect_db import db_manager
 
 # Utils modules
 from utils.landmark_calculator import calculate_landmarks_metric, calculate_length
@@ -80,10 +80,10 @@ def load_landmarks_data():
         return pd.DataFrame()
 
     # JSON 파일에서 추가 데이터 로드 및 병합
-    json_files_path = Path("json_files")
+    source_data/people_json_path = Path("source_data/people_json")
     json_data_list = []
-    if json_files_path.exists():
-        for file_path in json_files_path.glob("*.json"):
+    if source_data/people_json_path.exists():
+        for file_path in source_data/people_json_path.glob("*.json"):
             try:
                 with open(file_path, 'r', encoding='utf-8') as f:
                     json_data = json.load(f)
@@ -568,28 +568,28 @@ def render_database_management_sidebar():
     st.sidebar.write("### 🗄️ 데이터베이스 관리")
 
     # JSON 파일 스캔
-    json_files_path = Path("json_files")
-    if json_files_path.exists():
-        json_files = list(json_files_path.glob("*.json"))
+    source_data/people_json_path = Path("source_data/people_json")
+    if source_data/people_json_path.exists():
+        source_data/people_json = list(source_data/people_json_path.glob("*.json"))
 
-        if json_files:
-            st.sidebar.write(f"📁 `json_files/`에서 {len(json_files)}개 파일 발견")
+        if source_data/people_json:
+            st.sidebar.write(f"📁 `source_data/people_json/`에서 {len(source_data/people_json)}개 파일 발견")
 
             # 미리보기
             with st.sidebar.expander("파일 목록 보기"):
-                for file_path in json_files[:5]:  # 최대 5개만 표시
+                for file_path in source_data/people_json[:5]:  # 최대 5개만 표시
                     st.write(f"• {file_path.name}")
-                if len(json_files) > 5:
-                    st.write(f"... 외 {len(json_files) - 5}개")
+                if len(source_data/people_json) > 5:
+                    st.write(f"... 외 {len(source_data/people_json) - 5}개")
 
             # 데이터베이스 추가 버튼
             if st.sidebar.button("🔄 폴더-DB 동기화",
-                               help="json_files/ 폴더와 데이터베이스를 완전히 동기화합니다. (추가/수정/삭제 자동 처리)"):
+                               help="source_data/people_json/ 폴더와 데이터베이스를 완전히 동기화합니다. (추가/수정/삭제 자동 처리)"):
 
                 with st.spinner("폴더와 DB 동기화 중..."):
                     try:
                         # 새로운 동기화 시스템 사용
-                        sync_result = db_manager.sync_with_folder("json_files")
+                        sync_result = db_manager.sync_with_folder("source_data/people_json")
 
                         if "error" in sync_result:
                             st.sidebar.error(sync_result["error"])
@@ -608,14 +608,14 @@ def render_database_management_sidebar():
                             if sync_result["added"] + sync_result["updated"] + sync_result["deleted"] == 0:
                                 st.sidebar.info("📌 모든 데이터가 이미 동기화되어 있습니다.")
                             else:
-                                st.sidebar.info("✨ json_files 폴더와 DB가 완전히 동기화되었습니다!")
+                                st.sidebar.info("✨ source_data/people_json 폴더와 DB가 완전히 동기화되었습니다!")
 
                     except Exception as e:
                         st.sidebar.error(f"동기화 중 오류 발생: {e}")
         else:
-            st.sidebar.info("📭 `json_files/` 폴더가 비어있습니다.")
+            st.sidebar.info("📭 `source_data/people_json/` 폴더가 비어있습니다.")
     else:
-        st.sidebar.info("📁 `json_files/` 폴더가 없습니다.")
+        st.sidebar.info("📁 `source_data/people_json/` 폴더가 없습니다.")
 
 
 if __name__ == "__main__":

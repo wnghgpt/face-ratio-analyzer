@@ -5,7 +5,7 @@ import pandas as pd
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from contextlib import contextmanager
-from .models import Base, FaceData, Tag, CustomVariable, AnalysisConfig, AnalysisResult
+from .schema_def import Base, FaceData, Tag, Landmark, TagMeasurementDefinition
 import hashlib
 import json
 from datetime import datetime
@@ -45,7 +45,7 @@ class DatabaseManager:
 
     def import_json_data(self, json_data_list):
         """JSON 데이터를 데이터베이스로 임포트"""
-        from engines.ratio_parser import RatioParser
+        from utils.ratio_parser import RatioParser
 
         parser = RatioParser()
 
@@ -242,11 +242,11 @@ class DatabaseManager:
                 'total_saved_configs': total_configs
             }
 
-    def sync_with_folder(self, folder_path="json_files"):
+    def sync_with_folder(self, folder_path="source_data/people_json"):
         """json_files 폴더와 DB 동기화"""
         from pathlib import Path
         import json
-        from engines.ratio_parser import RatioParser
+        from utils.ratio_parser import RatioParser
 
         parser = RatioParser()
         folder_path = Path(folder_path)

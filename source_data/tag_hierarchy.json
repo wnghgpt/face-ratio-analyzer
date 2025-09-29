@@ -1,0 +1,100 @@
+{
+  "tag_hierarchy": [
+    {
+      "tag_name": "얼굴비율",
+      "tag_level": 0,
+      "parent_tag": null,
+      "description": "전체 얼굴 비율 관련 태그"
+    },
+    {
+      "tag_name": "가로세로비",
+      "tag_level": 1,
+      "parent_tag": "얼굴비율",
+      "description": "얼굴의 가로세로 비율"
+    },
+    {
+      "tag_name": "상중하비",
+      "tag_level": 1,
+      "parent_tag": "얼굴비율",
+      "description": "얼굴 상중하 부분 비율"
+    },
+    {
+      "tag_name": "눈",
+      "tag_level": 0,
+      "parent_tag": null,
+      "description": "눈 관련 측정"
+    },
+    {
+      "tag_name": "눈-너비",
+      "tag_level": 1,
+      "parent_tag": "눈",
+      "description": "눈 너비 관련"
+    },
+    {
+      "tag_name": "눈-높이",
+      "tag_level": 1,
+      "parent_tag": "눈",
+      "description": "눈 높이 관련"
+    },
+    {
+      "tag_name": "눈-간격",
+      "tag_level": 1,
+      "parent_tag": "눈",
+      "description": "눈 간격 관련"
+    },
+    {
+      "tag_name": "코",
+      "tag_level": 0,
+      "parent_tag": null,
+      "description": "코 관련 측정"
+    },
+    {
+      "tag_name": "코-너비",
+      "tag_level": 1,
+      "parent_tag": "코",
+      "description": "코 너비 관련"
+    },
+    {
+      "tag_name": "코-높이",
+      "tag_level": 1,
+      "parent_tag": "코",
+      "description": "코 높이 관련"
+    },
+    {
+      "tag_name": "입",
+      "tag_level": 0,
+      "parent_tag": null,
+      "description": "입 관련 측정"
+    },
+    {
+      "tag_name": "입-너비",
+      "tag_level": 1,
+      "parent_tag": "입",
+      "description": "입 너비 관련"
+    },
+    {
+      "tag_name": "입-높이",
+      "tag_level": 1,
+      "parent_tag": "입",
+      "description": "입 높이 관련"
+    },
+    {
+      "tag_name": "턱",
+      "tag_level": 0,
+      "parent_tag": null,
+      "description": "턱 관련 측정"
+    },
+    {
+      "tag_name": "턱-너비",
+      "tag_level": 1,
+      "parent_tag": "턱",
+      "description": "턱 너비 관련"
+    },
+    {
+      "tag_name": "턱-길이",
+      "tag_level": 1,
+      "parent_tag": "턱",
+      "description": "턱 길이 관련"
+    }
+  ]
+}
