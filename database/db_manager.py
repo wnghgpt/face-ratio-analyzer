@@ -1,9 +1,8 @@
 """
 데이터베이스 매니저
 """
-import sqlite3
 import pandas as pd
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from contextlib import contextmanager
 from .models import Base, FaceData, Tag, CustomVariable, AnalysisConfig, AnalysisResult
@@ -14,9 +13,13 @@ import os
 
 
 class DatabaseManager:
-    def __init__(self, db_path="database/face_analytics.db"):
-        self.db_path = db_path
-        self.engine = create_engine(f'sqlite:///{db_path}')
+    def __init__(self, db_url=None):
+        # MariaDB 연결
+        if db_url is None:
+            db_url = "mysql+pymysql://wnghgpt:dnlsehdn@localhost/face_analysis"
+
+        self.db_url = db_url
+        self.engine = create_engine(db_url, echo=False)
         self.SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=self.engine)
 
         # 데이터베이스 초기화
@@ -24,9 +27,6 @@ class DatabaseManager:
 
     def init_database(self):
         """데이터베이스 테이블 생성"""
-        # 디렉토리 생성
-        os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
-
         # 테이블 생성
         Base.metadata.create_all(bind=self.engine)
 

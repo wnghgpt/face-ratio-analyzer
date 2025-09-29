@@ -1,0 +1,344 @@
+[
+  {
+    "tag_name": "silhouette-얼굴형",
+    "measurement_type": "비율",
+    "description": "얼굴의 너비 대 높이 비율",
+    "denominator_point1": null,
+    "denominator_point2": null,
+    "numerator_point1": null,
+    "numerator_point2": null
+  },
+  {
+    "tag_name": "silhouette-옆광대-크기",
+    "measurement_type": "길이",
+    "description": "옆광대의 최대 너비",
+    "point1_mpidx": null,
+    "point2_mpidx": null
+  },
+  {
+    "tag_name": "silhouette-옆광대-높이",
+    "measurement_type": "길이",
+    "description": "옆광대의 수직 위치",
+    "point1_mpidx": null,
+    "point2_mpidx": null
+  },
+  {
+    "tag_name": "silhouette-옆광대-위치",
+    "measurement_type": "길이",
+    "description": "옆광대의 좌우 위치",
+    "point1_mpidx": null,
+    "point2_mpidx": null
+  },
+  {
+    "tag_name": "silhouette-앞광대-크기",
+    "measurement_type": "길이",
+    "description": "앞광대의 돌출 정도",
+    "point1_mpidx": null,
+    "point2_mpidx": null
+  },
+  {
+    "tag_name": "silhouette-앞광대-높이",
+    "measurement_type": "길이",
+    "description": "앞광대의 수직 위치",
+    "point1_mpidx": null,
+    "point2_mpidx": null
+  },
+  {
+    "tag_name": "silhouette-턱-발달",
+    "measurement_type": "길이",
+    "description": "턱의 돌출 정도",
+    "point1_mpidx": null,
+    "point2_mpidx": null
+  },
+  {
+    "tag_name": "silhouette-턱-형태",
+    "measurement_type": "곡률",
+    "description": "턱 선의 각도와 굴곡",
+    "curvature_points": null
+  },
+  {
+    "tag_name": "silhouette-턱-길이",
+    "measurement_type": "길이",
+    "description": "턱의 세로 길이",
+    "point1_mpidx": null,
+    "point2_mpidx": null
+  },
+  {
+    "tag_name": "silhouette-볼-살",
+    "measurement_type": "길이",
+    "description": "볼의 두께 정도",
+    "point1_mpidx": null,
+    "point2_mpidx": null
+  },
+  {
+    "tag_name": "silhouette-볼-탄력",
+    "measurement_type": "곡률",
+    "description": "볼의 굴곡 정도",
+    "curvature_points": null
+  },
+  {
+    "tag_name": "forehead-높이",
+    "measurement_type": "길이",
+    "description": "이마의 세로 길이",
+    "point1_mpidx": null,
+    "point2_mpidx": null
+  },
+  {
+    "tag_name": "forehead-너비",
+    "measurement_type": "길이",
+    "description": "이마의 가로 너비",
+    "point1_mpidx": null,
+    "point2_mpidx": null
+  },
+  {
+    "tag_name": "eyebrow-눈과의거리",
+    "measurement_type": "길이",
+    "description": "눈썹과 눈 사이의 거리",
+    "point1_mpidx": null,
+    "point2_mpidx": null
+  },
+  {
+    "tag_name": "eyebrow-형태",
+    "measurement_type": "곡률",
+    "description": "눈썹의 아치 형태",
+    "curvature_points": null
+  },
+  {
+    "tag_name": "eyebrow-곡률",
+    "measurement_type": "곡률",
+    "description": "눈썹의 굽힘 정도",
+    "curvature_points": [70, 107, 55, 8, 9]
+  },
+  {
+    "tag_name": "eyebrow-거리",
+    "measurement_type": "길이",
+    "description": "양 눈썹 사이의 거리",
+    "point1_mpidx": null,
+    "point2_mpidx": null
+  },
+  {
+    "tag_name": "eyebrow-길이",
+    "measurement_type": "길이",
+    "description": "눈썹의 가로 길이",
+    "point1_mpidx": null,
+    "point2_mpidx": null
+  },
+  {
+    "tag_name": "eyebrow-두께",
+    "measurement_type": "길이",
+    "description": "눈썹의 세로 두께",
+    "point1_mpidx": null,
+    "point2_mpidx": null
+  },
+  {
+    "tag_name": "eyebrow-숱",
+    "measurement_type": "길이",
+    "description": "눈썹의 밀도",
+    "point1_mpidx": null,
+    "point2_mpidx": null
+  },
+  {
+    "tag_name": "eye-인상",
+    "measurement_type": "비율",
+    "description": "눈의 전체적인 인상",
+    "denominator_point1": null,
+    "denominator_point2": null,
+    "numerator_point1": null,
+    "numerator_point2": null
+  },
+  {
+    "tag_name": "eye-미간",
+    "measurement_type": "길이",
+    "description": "양 눈 사이의 거리",
+    "point1_mpidx": null,
+    "point2_mpidx": null
+  },
+  {
+    "tag_name": "eye-모양",
+    "measurement_type": "비율",
+    "description": "눈의 가로 세로 비율",
+    "denominator_point1": null,
+    "denominator_point2": null,
+    "numerator_point1": null,
+    "numerator_point2": null
+  },
+  {
+    "tag_name": "eye-크기",
+    "measurement_type": "길이",
+    "description": "눈의 좌우 끝점 간 거리",
+    "point1_mpidx": 33,
+    "point2_mpidx": 133
+  },
+  {
+    "tag_name": "eye-길이",
+    "measurement_type": "길이",
+    "description": "눈의 가로 길이",
+    "point1_mpidx": null,
+    "point2_mpidx": null
+  },
+  {
+    "tag_name": "eye-높이",
+    "measurement_type": "길이",
+    "description": "눈의 세로 높이",
+    "point1_mpidx": null,
+    "point2_mpidx": null
+  },
+  {
+    "tag_name": "eye-쌍꺼풀",
+    "measurement_type": "길이",
+    "description": "쌍꺼풀의 깊이",
+    "point1_mpidx": null,
+    "point2_mpidx": null
+  },
+  {
+    "tag_name": "eye-애교",
+    "measurement_type": "곡률",
+    "description": "애교살의 굴곡",
+    "curvature_points": null
+  },
+  {
+    "tag_name": "eye-눈밑지",
+    "measurement_type": "길이",
+    "description": "눈밑지방의 돌출 정도",
+    "point1_mpidx": null,
+    "point2_mpidx": null
+  },
+  {
+    "tag_name": "eye-동공",
+    "measurement_type": "비율",
+    "description": "동공의 노출 비율",
+    "denominator_point1": null,
+    "denominator_point2": null,
+    "numerator_point1": null,
+    "numerator_point2": null
+  },
+  {
+    "tag_name": "nose-모양",
+    "measurement_type": "곡률",
+    "description": "코의 전체적인 형태",
+    "curvature_points": null
+  },
+  {
+    "tag_name": "nose-길이",
+    "measurement_type": "길이",
+    "description": "코의 세로 길이",
+    "point1_mpidx": null,
+    "point2_mpidx": null
+  },
+  {
+    "tag_name": "nose-콧대",
+    "measurement_type": "길이",
+    "description": "콧대의 너비",
+    "point1_mpidx": null,
+    "point2_mpidx": null
+  },
+  {
+    "tag_name": "nose-콧볼",
+    "measurement_type": "길이",
+    "description": "콧볼의 너비",
+    "point1_mpidx": null,
+    "point2_mpidx": null
+  },
+  {
+    "tag_name": "nose-코끝",
+    "measurement_type": "길이",
+    "description": "코끝의 너비",
+    "point1_mpidx": null,
+    "point2_mpidx": null
+  },
+  {
+    "tag_name": "nose-콧구멍",
+    "measurement_type": "길이",
+    "description": "콧구멍의 크기",
+    "point1_mpidx": null,
+    "point2_mpidx": null
+  },
+  {
+    "tag_name": "mouth-너비",
+    "measurement_type": "길이",
+    "description": "입술의 좌우 끝점 간 거리",
+    "point1_mpidx": 61,
+    "point2_mpidx": 291
+  },
+  {
+    "tag_name": "mouth-두께",
+    "measurement_type": "길이",
+    "description": "입술의 전체 두께",
+    "point1_mpidx": null,
+    "point2_mpidx": null
+  },
+  {
+    "tag_name": "mouth-입꼬리",
+    "measurement_type": "길이",
+    "description": "입꼬리의 높낮이",
+    "point1_mpidx": null,
+    "point2_mpidx": null
+  },
+  {
+    "tag_name": "mouth-위두께",
+    "measurement_type": "길이",
+    "description": "윗입술의 두께",
+    "point1_mpidx": null,
+    "point2_mpidx": null
+  },
+  {
+    "tag_name": "mouth-아래두께",
+    "measurement_type": "길이",
+    "description": "아랫입술의 두께",
+    "point1_mpidx": null,
+    "point2_mpidx": null
+  },
+  {
+    "tag_name": "mouth-전체입술선",
+    "measurement_type": "곡률",
+    "description": "입술 경계선의 명확함",
+    "curvature_points": null
+  },
+  {
+    "tag_name": "mouth-큐피드",
+    "measurement_type": "곡률",
+    "description": "큐피드 활의 형태",
+    "curvature_points": null
+  },
+  {
+    "tag_name": "mouth-입술결절",
+    "measurement_type": "길이",
+    "description": "입술 결절의 돌출 정도",
+    "point1_mpidx": null,
+    "point2_mpidx": null
+  },
+  {
+    "tag_name": "mouth-위긴장도",
+    "measurement_type": "길이",
+    "description": "윗입술의 긴장 상태",
+    "point1_mpidx": null,
+    "point2_mpidx": null
+  },
+  {
+    "tag_name": "mouth-아래긴장도",
+    "measurement_type": "길이",
+    "description": "아랫입술의 긴장 상태",
+    "point1_mpidx": null,
+    "point2_mpidx": null
+  },
+  {
+    "tag_name": "mouth-인중길이",
+    "measurement_type": "길이",
+    "description": "인중의 세로 길이",
+    "point1_mpidx": null,
+    "point2_mpidx": null
+  },
+  {
+    "tag_name": "mouth-인중너비",
+    "measurement_type": "길이",
+    "description": "인중의 가로 너비",
+    "point1_mpidx": null,
+    "point2_mpidx": null
+  },
+  {
+    "tag_name": "mouth-팔자",
+    "measurement_type": "곡률",
+    "description": "팔자주름의 깊이",
+    "curvature_points": null
+  }
+]

@@ -1,7 +1,7 @@
 """
 데이터베이스 모델 정의
 """
-from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime, Text, ForeignKey
+from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime, Text, ForeignKey, JSON
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker
 from datetime import datetime
@@ -44,7 +44,7 @@ class FaceData(Base):
 
     # 관계
     tags = relationship("Tag", back_populates="face_data")
-    custom_variables = relationship("CustomVariable", back_populates="face_data")
+    landmarks_points = relationship("Landmark", back_populates="face_data")
 
     def to_dict(self):
         """딕셔너리로 변환"""
@@ -82,61 +82,66 @@ class Tag(Base):
     face_data = relationship("FaceData", back_populates="tags")
 
 
-class CustomVariable(Base):
-    """사용자 정의 계산 변수"""
-    __tablename__ = 'custom_variables'
+class Landmark(Base):
+    """개별 랜드마크 좌표 테이블"""
+    __tablename__ = 'landmarks'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     face_data_id = Column(Integer, ForeignKey('face_data.id'), nullable=False)
-    variable_name = Column(String(100), nullable=False)
-    variable_value = Column(Float)
-    calculation_formula = Column(String(500))  # "ratio_2 / ratio_3" 같은 공식
+    mp_idx = Column(Integer, nullable=False)  # MediaPipe 인덱스 (0~491, 500)
+    x = Column(Float, nullable=False)         # X 좌표
+    y = Column(Float, nullable=False)         # Y 좌표
+    z = Column(Float)                         # Z 좌표 (있는 경우)
 
     # 관계
-    face_data = relationship("FaceData", back_populates="custom_variables")
-
-
-class AnalysisConfig(Base):
-    """저장된 분석 설정"""
-    __tablename__ = 'analysis_configs'
-
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    name = Column(String(255), nullable=False)
-    description = Column(Text)
-    config_json = Column(Text, nullable=False)  # 분석 설정 JSON
-    created_date = Column(DateTime, default=datetime.utcnow)
-    last_used = Column(DateTime)
-    use_count = Column(Integer, default=0)
-    tags = Column(String(500))  # 태그들 (콤마 구분)
+    face_data = relationship("FaceData", back_populates="landmarks_points")
 
     def to_dict(self):
         return {
             'id': self.id,
-            'name': self.name,
-            'description': self.description,
-            'config': json.loads(self.config_json) if self.config_json else {},
-            'created_date': self.created_date.isoformat() if self.created_date else None,
-            'last_used': self.last_used.isoformat() if self.last_used else None,
-            'use_count': self.use_count,
-            'tags': self.tags.split(',') if self.tags else []
+            'face_data_id': self.face_data_id,
+            'mp_idx': self.mp_idx,
+            'x': self.x,
+            'y': self.y,
+            'z': self.z
         }
 
 
-class AnalysisResult(Base):
-    """분석 결과 캐시"""
-    __tablename__ = 'analysis_results'
+class TagMeasurementDefinition(Base):
+    """태그 측정 정의 테이블"""
+    __tablename__ = 'tag_measurement_definitions'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    config_hash = Column(String(64), nullable=False)  # 설정의 해시값
-    result_data = Column(Text, nullable=False)        # 결과 JSON
-    created_date = Column(DateTime, default=datetime.utcnow)
-    file_count = Column(Integer)                      # 분석된 파일 수
+    tag_name = Column(String(100), unique=True, nullable=False)
+    measurement_type = Column(String(20), nullable=False)  # "길이", "비율", "곡률"
+    description = Column(Text)
+
+    # 길이 측정용
+    point1_mpidx = Column(Integer)
+    point2_mpidx = Column(Integer)
+
+    # 비율 측정용 - 분모
+    denominator_point1 = Column(Integer)
+    denominator_point2 = Column(Integer)
+
+    # 비율 측정용 - 분자
+    numerator_point1 = Column(Integer)
+    numerator_point2 = Column(Integer)
+
+    # 곡률 측정용
+    curvature_points = Column(JSON)
 
     def to_dict(self):
         return {
             'id': self.id,
-            'config_hash': self.config_hash,
-            'result': json.loads(self.result_data) if self.result_data else {},
-            'created_date': self.created_date.isoformat() if self.created_date else None,
-            'file_count': self.file_count
+            'tag_name': self.tag_name,
+            'measurement_type': self.measurement_type,
+            'description': self.description,
+            'point1_mpidx': self.point1_mpidx,
+            'point2_mpidx': self.point2_mpidx,
+            'denominator_point1': self.denominator_point1,
+            'denominator_point2': self.denominator_point2,
+            'numerator_point1': self.numerator_point1,
+            'numerator_point2': self.numerator_point2,
+            'curvature_points': self.curvature_points
         }

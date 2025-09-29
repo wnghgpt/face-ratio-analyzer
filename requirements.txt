@@ -7,6 +7,7 @@ numpy>=1.24.0
 
 # Database
 sqlalchemy>=2.0.0
+PyMySQL>=1.0.0  # MariaDB/MySQL connector
 
 # File watching (for auto_import.py)
 watchdog>=3.0.0
