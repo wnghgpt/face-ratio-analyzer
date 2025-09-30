@@ -77,9 +77,18 @@ class Tag(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     face_data_id = Column(Integer, ForeignKey('face_data.id'), nullable=False)
     tag_name = Column(String(100), nullable=False)
+    tag_level = Column(Integer, nullable=False)  # 0: 추상, 1: 구체적, 2: 측정값 기반
 
     # 관계
     face_data = relationship("FaceData", back_populates="tags")
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'face_data_id': self.face_data_id,
+            'tag_name': self.tag_name,
+            'tag_level': self.tag_level
+        }
 
 
 class Landmark(Base):
