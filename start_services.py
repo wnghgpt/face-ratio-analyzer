@@ -10,8 +10,8 @@ from pathlib import Path
 project_root = Path(__file__).parent
 sys.path.append(str(project_root))
 
-from database.schema_edit import SchemaManager
-from database.file_watcher import FileWatcherService
+from database.schema_manager import SchemaManager
+from database.connect_db import db_manager
 
 def main():
     """메인 함수"""
@@ -31,8 +31,7 @@ def main():
     print("2️⃣ 파일 감시 서비스 시작...")
     os.chdir(project_root)  # 프로젝트 루트로 이동
 
-    file_watcher = FileWatcherService("source_data/people_json")
-    file_watcher.start()
+    db_manager.start_file_watcher("source_data/people_json")
 
 if __name__ == "__main__":
     main()

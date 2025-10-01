@@ -76,8 +76,9 @@ class Tag(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     face_data_id = Column(Integer, ForeignKey('face_data.id'), nullable=False)
-    tag_name = Column(String(100), nullable=False)
+    tag_name = Column(String(100), nullable=False)  # 0,1차: "얼굴형", 2차: "eye-길이"
     tag_level = Column(Integer, nullable=False)  # 0: 추상, 1: 구체적, 2: 측정값 기반
+    tag_value = Column(String(20))  # 2차 태그만: "긴", "보통", "짧은" (0,1차는 NULL)
 
     # 관계
     face_data = relationship("FaceData", back_populates="tags")
@@ -87,7 +88,8 @@ class Tag(Base):
             'id': self.id,
             'face_data_id': self.face_data_id,
             'tag_name': self.tag_name,
-            'tag_level': self.tag_level
+            'tag_level': self.tag_level,
+            'tag_value': self.tag_value
         }
 
 
@@ -153,4 +155,30 @@ class TagMeasurementDefinition(Base):
             'numerator_point1': self.numerator_point1,
             'numerator_point2': self.numerator_point2,
             'curvature_points': self.curvature_points
+        }
+
+
+class TagThreshold(Base):
+    """태그 임계값 정의 테이블"""
+    __tablename__ = 'tag_thresholds'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    tag_name = Column(String(50), nullable=False)  # "eye-길이", "nose-크기" 등
+    value_name = Column(String(20), nullable=False)  # "긴", "보통", "짧은"
+    min_threshold = Column(Float)  # 최소 임계값
+    max_threshold = Column(Float)  # 최대 임계값
+    description = Column(Text)  # 설명
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'tag_name': self.tag_name,
+            'value_name': self.value_name,
+            'min_threshold': self.min_threshold,
+            'max_threshold': self.max_threshold,
+            'description': self.description,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None
         }

@@ -15,6 +15,7 @@ from itertools import combinations
 
 # Database
 from database.connect_db import db_manager
+from database.data_handler import crud_service
 
 # Utils modules
 from utils.landmark_calculator import calculate_landmarks_metric, calculate_length
@@ -66,7 +67,7 @@ def main():
 def load_landmarks_data():
     """랜드마크 데이터 로드"""
     # DB에서 데이터 가져오기
-    db_data = db_manager.get_dataframe()
+    db_data = crud_service.get_dataframe()
 
     if db_data.empty:
         st.sidebar.warning("💡 DB에 저장된 데이터가 없습니다.")
@@ -80,10 +81,10 @@ def load_landmarks_data():
         return pd.DataFrame()
 
     # JSON 파일에서 추가 데이터 로드 및 병합
-    source_data/people_json_path = Path("source_data/people_json")
+    people_json_path = Path("source_data/people_json")
     json_data_list = []
-    if source_data/people_json_path.exists():
-        for file_path in source_data/people_json_path.glob("*.json"):
+    if people_json_path.exists():
+        for file_path in people_json_path.glob("*.json"):
             try:
                 with open(file_path, 'r', encoding='utf-8') as f:
                     json_data = json.load(f)
@@ -568,19 +569,19 @@ def render_database_management_sidebar():
     st.sidebar.write("### 🗄️ 데이터베이스 관리")
 
     # JSON 파일 스캔
-    source_data/people_json_path = Path("source_data/people_json")
-    if source_data/people_json_path.exists():
-        source_data/people_json = list(source_data/people_json_path.glob("*.json"))
+    people_json_path = Path("source_data/people_json")
+    if people_json_path.exists():
+        json_files = list(people_json_path.glob("*.json"))
 
-        if source_data/people_json:
-            st.sidebar.write(f"📁 `source_data/people_json/`에서 {len(source_data/people_json)}개 파일 발견")
+        if json_files:
+            st.sidebar.write(f"📁 `source_data/people_json/`에서 {len(json_files)}개 파일 발견")
 
             # 미리보기
             with st.sidebar.expander("파일 목록 보기"):
-                for file_path in source_data/people_json[:5]:  # 최대 5개만 표시
+                for file_path in json_files[:5]:  # 최대 5개만 표시
                     st.write(f"• {file_path.name}")
-                if len(source_data/people_json) > 5:
-                    st.write(f"... 외 {len(source_data/people_json) - 5}개")
+                if len(json_files) > 5:
+                    st.write(f"... 외 {len(json_files) - 5}개")
 
             # 데이터베이스 추가 버튼
             if st.sidebar.button("🔄 폴더-DB 동기화",
