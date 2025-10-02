@@ -9,7 +9,7 @@ from typing import List, Dict, Optional
 # 프로젝트 루트를 Python 경로에 추가
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from database.schema_def import FaceData, Landmark, Tag, TagMeasurementDefinition, TagThreshold
+from database.schema_def import FaceData, FaceBasicMeasurements, Landmark, Tag, TagMeasurementDefinition, TagThreshold, FaceMeasurementValue
 import pandas as pd
 import json
 import hashlib
@@ -30,9 +30,8 @@ class DatabaseCRUD:
     def query_data(self, filters=None):
         """데이터 쿼리"""
         from database.connect_db import db_manager
-        from database.connect_db import db_manager
         with db_manager.get_session() as session:
-            query = session.query(FaceData)
+            query = session.query(FaceData).join(FaceBasicMeasurements, isouter=True)
 
             if filters:
                 # 태그 필터
@@ -49,11 +48,11 @@ class DatabaseCRUD:
                 # 비율 범위 필터
                 if 'ratio_x_range' in filters and filters['ratio_x_range']:
                     min_val, max_val = filters['ratio_x_range']
-                    query = query.filter(FaceData.ratio_2.between(min_val, max_val))
+                    query = query.filter(FaceBasicMeasurements.ratio_2.between(min_val, max_val))
 
                 if 'ratio_y_range' in filters and filters['ratio_y_range']:
                     min_val, max_val = filters['ratio_y_range']
-                    query = query.filter(FaceData.ratio_3.between(min_val, max_val))
+                    query = query.filter(FaceBasicMeasurements.ratio_3.between(min_val, max_val))
 
             results = query.all()
             return [result.to_dict() for result in results]
@@ -225,12 +224,20 @@ class DatabaseCRUD:
                 # 측정값 계산
                 calculated_value = self.calculate_measurement_value(landmarks, definition)
 
+                # 1. 측정값 저장 (None이어도 저장)
+                measurement_value = FaceMeasurementValue(
+                    face_data_id=face_data_id,
+                    tag_name=definition.tag_name,
+                    측정값=calculated_value
+                )
+                session.add(measurement_value)
+
+                # 2. 값이 있을 때만 임계값 분류 및 태그 저장
                 if calculated_value is not None:
-                    # 임계값을 통한 분류
                     tag_value = self.classify_by_threshold(session, definition.tag_name, calculated_value)
 
                     if tag_value:
-                        # 2차 태그 저장
+                        # 3. 2차 태그 저장
                         secondary_tag = Tag(
                             face_data_id=face_data_id,
                             tag_name=definition.tag_name,  # "eye-길이"
@@ -248,36 +255,74 @@ class DatabaseCRUD:
         if not landmarks or not definition:
             return None
 
-        try:
-            if definition.measurement_type == "distance":
-                # 거리 측정
-                if definition.point1_mpidx is not None and definition.point2_mpidx is not None:
-                    p1 = landmarks[definition.point1_mpidx]
-                    p2 = landmarks[definition.point2_mpidx]
+        # landmarks를 dict로 변환 (mpidx를 key로)
+        landmarks_dict = {}
+        for lm in landmarks:
+            if isinstance(lm, dict) and 'mpidx' in lm:
+                landmarks_dict[lm['mpidx']] = lm
 
-                    distance = math.sqrt((p1['x'] - p2['x'])**2 + (p1['y'] - p2['y'])**2)
+        try:
+            if definition.measurement_type == "길이":
+                # 길이 측정 (분자만 사용)
+                if definition.분자_점1 is not None and definition.분자_점2 is not None:
+                    if definition.분자_점1 not in landmarks_dict or definition.분자_점2 not in landmarks_dict:
+                        return None
+
+                    p1 = landmarks_dict[definition.분자_점1]
+                    p2 = landmarks_dict[definition.분자_점2]
+
+                    # 거리 계산 방식에 따라
+                    if definition.거리계산방식 == "직선거리":
+                        distance = math.sqrt((p1['x'] - p2['x'])**2 + (p1['y'] - p2['y'])**2)
+                    elif definition.거리계산방식 == "x좌표거리":
+                        distance = abs(p1['x'] - p2['x'])
+                    elif definition.거리계산방식 == "y좌표거리":
+                        distance = abs(p1['y'] - p2['y'])
+                    else:
+                        distance = math.sqrt((p1['x'] - p2['x'])**2 + (p1['y'] - p2['y'])**2)
+
                     return distance
 
-            elif definition.measurement_type == "ratio":
-                # 비율 측정
-                if (definition.numerator_point1 is not None and definition.numerator_point2 is not None and
-                    definition.denominator_point1 is not None and definition.denominator_point2 is not None):
+            elif definition.measurement_type == "비율":
+                # 비율 측정 (분자/분모)
+                if (definition.분자_점1 is not None and definition.분자_점2 is not None and
+                    definition.분모_점1 is not None and definition.분모_점2 is not None):
+
+                    if (definition.분자_점1 not in landmarks_dict or definition.분자_점2 not in landmarks_dict or
+                        definition.분모_점1 not in landmarks_dict or definition.분모_점2 not in landmarks_dict):
+                        return None
 
                     # 분자 거리
-                    num_p1 = landmarks[definition.numerator_point1]
-                    num_p2 = landmarks[definition.numerator_point2]
-                    numerator = math.sqrt((num_p1['x'] - num_p2['x'])**2 + (num_p1['y'] - num_p2['y'])**2)
+                    num_p1 = landmarks_dict[definition.분자_점1]
+                    num_p2 = landmarks_dict[definition.분자_점2]
 
                     # 분모 거리
-                    den_p1 = landmarks[definition.denominator_point1]
-                    den_p2 = landmarks[definition.denominator_point2]
-                    denominator = math.sqrt((den_p1['x'] - den_p2['x'])**2 + (den_p1['y'] - den_p2['y'])**2)
+                    den_p1 = landmarks_dict[definition.분모_점1]
+                    den_p2 = landmarks_dict[definition.분모_점2]
+
+                    # 거리 계산 방식에 따라
+                    if definition.거리계산방식 == "직선거리":
+                        numerator = math.sqrt((num_p1['x'] - num_p2['x'])**2 + (num_p1['y'] - num_p2['y'])**2)
+                        denominator = math.sqrt((den_p1['x'] - den_p2['x'])**2 + (den_p1['y'] - den_p2['y'])**2)
+                    elif definition.거리계산방식 == "x좌표거리":
+                        numerator = abs(num_p1['x'] - num_p2['x'])
+                        denominator = abs(den_p1['x'] - den_p2['x'])
+                    elif definition.거리계산방식 == "y좌표거리":
+                        numerator = abs(num_p1['y'] - num_p2['y'])
+                        denominator = abs(den_p1['y'] - den_p2['y'])
+                    else:
+                        numerator = math.sqrt((num_p1['x'] - num_p2['x'])**2 + (num_p1['y'] - num_p2['y'])**2)
+                        denominator = math.sqrt((den_p1['x'] - den_p2['x'])**2 + (den_p1['y'] - den_p2['y'])**2)
 
                     if denominator != 0:
                         return numerator / denominator
 
+            elif definition.measurement_type == "곡률":
+                # 곡률 측정 (향후 구현)
+                return None
+
         except (IndexError, KeyError, TypeError) as e:
-            print(f"Error calculating measurement: {e}")
+            print(f"Error calculating measurement for {definition.tag_name}: {e}")
             return None
 
         return None
@@ -349,15 +394,15 @@ class DatabaseCRUD:
                 print(f"Warning: Invalid JSON in landmarks for face_data_id {face_data_id}")
                 return
 
-        # 각 landmark 포인트를 테이블에 저장
+        # 각 landmark 포인트를 테이블에 저장 (소수점 3자리까지만)
         for landmark in landmarks:
             if isinstance(landmark, dict) and 'mpidx' in landmark:
                 landmark_obj = Landmark(
                     face_data_id=face_data_id,
                     mp_idx=landmark.get('mpidx'),
-                    x=landmark.get('x', 0.0),
-                    y=landmark.get('y', 0.0),
-                    z=landmark.get('z', 0.0)
+                    x=round(landmark.get('x', 0.0), 3),
+                    y=round(landmark.get('y', 0.0), 3),
+                    z=round(landmark.get('z', 0.0), 3) if landmark.get('z') is not None else None
                 )
                 session.add(landmark_obj)
 
@@ -409,10 +454,21 @@ class DatabaseCRUD:
         parser = RatioParser()
         ratio_components = parser.parse_ratio_to_components(json_data.get('faceRatio', ''))
 
-        # FaceData 객체 생성
+        # FaceData 객체 생성 (기본 정보만)
         face_data = FaceData(
             name=name or json_data.get('name', 'unknown'),
-            face_ratio_raw=json_data.get('faceRatio', ''),
+            json_file_path=json_data.get('_filename', ''),
+            image_file_path=None  # 추후 연동
+        )
+
+        session.add(face_data)
+        session.flush()  # ID 생성을 위해
+
+        # FaceBasicMeasurements 객체 생성 (수치 데이터)
+        measurements = FaceBasicMeasurements(
+            face_data_id=face_data.id,
+            roll_angle=json_data.get('rollAngle', 0),
+            face_basic_ratio=json_data.get('faceRatio', ''),
             ratio_1=ratio_components.get('ratio_1'),
             ratio_2=ratio_components.get('ratio_2'),
             ratio_3=ratio_components.get('ratio_3'),
@@ -420,18 +476,10 @@ class DatabaseCRUD:
             ratio_5=ratio_components.get('ratio_5'),
             ratio_2_1=ratio_components.get('ratio_2_1'),
             ratio_3_1=ratio_components.get('ratio_3_1'),
-            ratio_3_2=ratio_components.get('ratio_3_2'),
-            roll_angle=json_data.get('rollAngle', 0),
-            ratios_detail=json.dumps(json_data.get('ratios', {})),
-            landmarks=json.dumps(json_data.get('landmarks', [])),
-            meta_data=json.dumps({
-                'source_file': json_data.get('_filename', ''),
-                'import_date': datetime.utcnow().isoformat()
-            })
+            ratio_3_2=ratio_components.get('ratio_3_2')
         )
 
-        session.add(face_data)
-        session.flush()  # ID 생성을 위해
+        session.add(measurements)
 
         # 태그 처리 (통합된 메서드 사용)
         self.process_tags_for_face(

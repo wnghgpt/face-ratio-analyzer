@@ -10,7 +10,7 @@ from sqlalchemy import text
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from database.connect_db import db_manager
-from database.schema_def import Base, TagMeasurementDefinition
+from database.schema_def import Base, TagMeasurementDefinition, TagThreshold
 import json
 
 class SchemaManager:
@@ -45,7 +45,10 @@ class SchemaManager:
         unused_tables = [
             'analysis_configs',
             'analysis_results',
-            'custom_variables'
+            'custom_variables',
+            'tag_measurement_definitions',  # 스키마 변경 시 재생성
+            'tag_thresholds',  # 스키마 변경 시 재생성
+            'face_measurement_values'  # 스키마 변경 시 재생성
         ]
 
         try:
@@ -96,13 +99,12 @@ class SchemaManager:
                         tag_name=definition['tag_name'],
                         measurement_type=definition['measurement_type'],
                         description=definition.get('description'),
-                        point1_mpidx=definition.get('point1_mpidx'),
-                        point2_mpidx=definition.get('point2_mpidx'),
-                        denominator_point1=definition.get('denominator_point1'),
-                        denominator_point2=definition.get('denominator_point2'),
-                        numerator_point1=definition.get('numerator_point1'),
-                        numerator_point2=definition.get('numerator_point2'),
-                        curvature_points=definition.get('curvature_points')
+                        거리계산방식=definition.get('거리계산방식'),
+                        분자_점1=definition.get('분자_점1'),
+                        분자_점2=definition.get('분자_점2'),
+                        분모_점1=definition.get('분모_점1'),
+                        분모_점2=definition.get('분모_점2'),
+                        곡률점리스트=definition.get('곡률점리스트')
                     )
                     session.add(new_def)
 
@@ -113,6 +115,52 @@ class SchemaManager:
 
         except Exception as e:
             print(f"❌ 측정 정의 초기화 실패: {e}")
+            return False
+
+        return True
+
+    def initialize_threshold_definitions(self):
+        """임계값 정의 초기 데이터 로드"""
+        print("📏 임계값 정의 초기화 중...")
+
+        json_file = os.path.join(
+            os.path.dirname(os.path.dirname(__file__)),
+            'source_data', 'threshold_definitions.json'
+        )
+
+        if not os.path.exists(json_file):
+            print(f"⚠️ JSON 파일 없음: {json_file}")
+            return True
+
+        try:
+            with open(json_file, 'r', encoding='utf-8') as f:
+                thresholds = json.load(f)
+
+            with db_manager.get_session() as session:
+                # 기존 데이터 확인
+                existing_count = session.query(TagThreshold).count()
+
+                if existing_count > 0:
+                    print(f"📋 기존 임계값 정의 {existing_count}개 존재")
+                    return True
+
+                # 새 데이터 추가
+                for threshold in thresholds:
+                    new_threshold = TagThreshold(
+                        tag_name=threshold['tag_name'],
+                        value_name=threshold['value_name'],
+                        min_threshold=threshold.get('min_threshold'),
+                        max_threshold=threshold.get('max_threshold')
+                    )
+                    session.add(new_threshold)
+
+                session.commit()
+
+                final_count = session.query(TagThreshold).count()
+                print(f"✅ {final_count}개 임계값 정의 로드 완료")
+
+        except Exception as e:
+            print(f"❌ 임계값 정의 초기화 실패: {e}")
             return False
 
         return True
@@ -134,6 +182,10 @@ class SchemaManager:
 
         # 3. 측정 정의 초기화
         if not self.initialize_measurement_definitions():
+            success = False
+
+        # 4. 임계값 정의 초기화
+        if not self.initialize_threshold_definitions():
             success = False
 
         if success:
