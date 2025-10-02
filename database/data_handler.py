@@ -9,7 +9,11 @@ from typing import List, Dict, Optional
 # 프로젝트 루트를 Python 경로에 추가
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from database.schema_def import FaceData, FaceBasicMeasurements, Landmark, Tag, TagMeasurementDefinition, TagThreshold, FaceMeasurementValue
+from database.schema_def import (
+    PoolProfile, PoolBasicRatio, PoolLandmark, PoolTag,
+    Pool2ndTagDef, PoolTagThreshold, Pool2ndTagValue,
+    UserProfile, UserLandmark, UserTag, PoolTagRelation
+)
 import pandas as pd
 import json
 import hashlib
@@ -31,28 +35,28 @@ class DatabaseCRUD:
         """데이터 쿼리"""
         from database.connect_db import db_manager
         with db_manager.get_session() as session:
-            query = session.query(FaceData).join(FaceBasicMeasurements, isouter=True)
+            query = session.query(PoolProfile).join(PoolBasicRatio, isouter=True)
 
             if filters:
                 # 태그 필터
                 if 'tags' in filters and filters['tags']:
                     tag_conditions = []
                     for tag in filters['tags']:
-                        query = query.join(Tag).filter(Tag.tag_name.like(f'%{tag}%'))
+                        query = query.join(PoolTag).filter(PoolTag.tag_name.like(f'%{tag}%'))
 
                 # 날짜 필터
                 if 'date_range' in filters and filters['date_range']:
                     start_date, end_date = filters['date_range']
-                    query = query.filter(FaceData.upload_date.between(start_date, end_date))
+                    query = query.filter(PoolProfile.upload_date.between(start_date, end_date))
 
                 # 비율 범위 필터
                 if 'ratio_x_range' in filters and filters['ratio_x_range']:
                     min_val, max_val = filters['ratio_x_range']
-                    query = query.filter(FaceBasicMeasurements.ratio_2.between(min_val, max_val))
+                    query = query.filter(PoolBasicRatio.ratio_2.between(min_val, max_val))
 
                 if 'ratio_y_range' in filters and filters['ratio_y_range']:
                     min_val, max_val = filters['ratio_y_range']
-                    query = query.filter(FaceBasicMeasurements.ratio_3.between(min_val, max_val))
+                    query = query.filter(PoolBasicRatio.ratio_3.between(min_val, max_val))
 
             results = query.all()
             return [result.to_dict() for result in results]
@@ -90,41 +94,41 @@ class DatabaseCRUD:
     # ==================== 얼굴 데이터 조회 ====================
 
     def get_all_faces(self) -> List[Dict]:
-        """모든 얼굴 데이터 조회"""
+        """모든 풀 프로필 데이터 조회"""
         from database.connect_db import db_manager
         with db_manager.get_session() as session:
-            faces = session.query(FaceData).all()
-            return [face.to_dict() for face in faces]
+            profiles = session.query(PoolProfile).all()
+            return [profile.to_dict() for profile in profiles]
 
     def get_face_by_name(self, name: str) -> Optional[Dict]:
-        """이름으로 얼굴 데이터 조회"""
+        """이름으로 풀 프로필 데이터 조회"""
         from database.connect_db import db_manager
         with db_manager.get_session() as session:
-            face = session.query(FaceData).filter_by(name=name).first()
-            return face.to_dict() if face else None
+            profile = session.query(PoolProfile).filter_by(name=name).first()
+            return profile.to_dict() if profile else None
 
     def get_face_by_id(self, face_id: int) -> Optional[Dict]:
-        """ID로 얼굴 데이터 조회"""
+        """ID로 풀 프로필 데이터 조회"""
         from database.connect_db import db_manager
         with db_manager.get_session() as session:
-            face = session.query(FaceData).filter_by(id=face_id).first()
-            return face.to_dict() if face else None
+            profile = session.query(PoolProfile).filter_by(id=face_id).first()
+            return profile.to_dict() if profile else None
 
     # ==================== 랜드마크 데이터 조회 ====================
 
     def get_landmarks_by_face_id(self, face_id: int) -> List[Dict]:
-        """얼굴 ID로 랜드마크 조회"""
+        """프로필 ID로 랜드마크 조회"""
         from database.connect_db import db_manager
         with db_manager.get_session() as session:
-            landmarks = session.query(Landmark).filter_by(face_data_id=face_id).all()
+            landmarks = session.query(PoolLandmark).filter_by(profile_id=face_id).all()
             return [landmark.to_dict() for landmark in landmarks]
 
     def get_landmark_by_mpidx(self, face_id: int, mp_idx: int) -> Optional[Dict]:
         """특정 MediaPipe 인덱스 랜드마크 조회"""
         from database.connect_db import db_manager
         with db_manager.get_session() as session:
-            landmark = session.query(Landmark).filter_by(
-                face_data_id=face_id,
+            landmark = session.query(PoolLandmark).filter_by(
+                profile_id=face_id,
                 mp_idx=mp_idx
             ).first()
             return landmark.to_dict() if landmark else None
@@ -133,9 +137,9 @@ class DatabaseCRUD:
         """여러 MediaPipe 인덱스 랜드마크 조회"""
         from database.connect_db import db_manager
         with db_manager.get_session() as session:
-            landmarks = session.query(Landmark).filter(
-                Landmark.face_data_id == face_id,
-                Landmark.mp_idx.in_(mp_idx_list)
+            landmarks = session.query(PoolLandmark).filter(
+                PoolLandmark.profile_id == face_id,
+                PoolLandmark.mp_idx.in_(mp_idx_list)
             ).all()
             return [landmark.to_dict() for landmark in landmarks]
 
@@ -145,21 +149,21 @@ class DatabaseCRUD:
         """모든 측정 정의 조회"""
         from database.connect_db import db_manager
         with db_manager.get_session() as session:
-            definitions = session.query(TagMeasurementDefinition).all()
+            definitions = session.query(Pool2ndTagDef).all()
             return [definition.to_dict() for definition in definitions]
 
     def get_measurement_definition_by_tag(self, tag_name: str) -> Optional[Dict]:
         """태그 이름으로 측정 정의 조회"""
         from database.connect_db import db_manager
         with db_manager.get_session() as session:
-            definition = session.query(TagMeasurementDefinition).filter_by(tag_name=tag_name).first()
+            definition = session.query(Pool2ndTagDef).filter_by(tag_name=tag_name).first()
             return definition.to_dict() if definition else None
 
     def get_measurement_definitions_by_type(self, measurement_type: str) -> List[Dict]:
         """측정 타입으로 정의들 조회"""
         from database.connect_db import db_manager
         with db_manager.get_session() as session:
-            definitions = session.query(TagMeasurementDefinition).filter_by(
+            definitions = session.query(Pool2ndTagDef).filter_by(
                 measurement_type=measurement_type
             ).all()
             return [definition.to_dict() for definition in definitions]
@@ -167,10 +171,10 @@ class DatabaseCRUD:
     # ==================== 태그 관리 ====================
 
     def get_tags_by_face_id(self, face_id: int) -> List[str]:
-        """얼굴 ID로 태그들 조회"""
+        """프로필 ID로 태그들 조회"""
         from database.connect_db import db_manager
         with db_manager.get_session() as session:
-            tags = session.query(Tag).filter_by(face_data_id=face_id).all()
+            tags = session.query(PoolTag).filter_by(profile_id=face_id).all()
             return [tag.tag_name for tag in tags]
 
 
@@ -211,13 +215,13 @@ class DatabaseCRUD:
         # 기본값: 1차 태그로 분류
         return 1
 
-    def auto_generate_secondary_tags(self, session: Session, face_data_id: int, landmarks):
+    def auto_generate_secondary_tags(self, session: Session, profile_id: int, landmarks):
         """임계값 기반 2차 태그 자동 생성"""
         if not landmarks:
             return
 
         # 모든 태그 카테고리와 측정 정의 가져오기
-        tag_definitions = session.query(TagMeasurementDefinition).all()
+        tag_definitions = session.query(Pool2ndTagDef).all()
 
         for definition in tag_definitions:
             try:
@@ -225,8 +229,8 @@ class DatabaseCRUD:
                 calculated_value = self.calculate_measurement_value(landmarks, definition)
 
                 # 1. 측정값 저장 (None이어도 저장)
-                measurement_value = FaceMeasurementValue(
-                    face_data_id=face_data_id,
+                measurement_value = Pool2ndTagValue(
+                    profile_id=profile_id,
                     tag_name=definition.tag_name,
                     측정값=calculated_value
                 )
@@ -238,8 +242,8 @@ class DatabaseCRUD:
 
                     if tag_value:
                         # 3. 2차 태그 저장
-                        secondary_tag = Tag(
-                            face_data_id=face_data_id,
+                        secondary_tag = PoolTag(
+                            profile_id=profile_id,
                             tag_name=definition.tag_name,  # "eye-길이"
                             tag_level=2,
                             tag_value=tag_value  # "긴", "보통", "짧은"
@@ -329,7 +333,7 @@ class DatabaseCRUD:
 
     def classify_by_threshold(self, session: Session, tag_name: str, value: float):
         """임계값에 따른 태그 값 분류"""
-        thresholds = session.query(TagThreshold).filter_by(tag_name=tag_name).all()
+        thresholds = session.query(PoolTagThreshold).filter_by(tag_name=tag_name).all()
 
         for threshold in thresholds:
             if (threshold.min_threshold is None or value >= threshold.min_threshold) and \
@@ -338,8 +342,8 @@ class DatabaseCRUD:
 
         return None
 
-    def process_tags_for_face(self, session, face_data_id: int, tags_data, landmarks=None):
-        """얼굴 데이터에 태그들을 처리하여 추가 (공통 로직)"""
+    def process_tags_for_face(self, session, profile_id: int, tags_data, landmarks=None):
+        """프로필에 태그들을 처리하여 추가 (공통 로직)"""
         tags = tags_data or []
         if isinstance(tags, str):
             tags = [tag.strip() for tag in tags.split(',')]
@@ -353,16 +357,16 @@ class DatabaseCRUD:
                     parts = tag.split('-')
                     tag_category = f"{parts[0]}-{parts[1]}"  # "eye-길이"
                     tag_value = parts[2]  # "긴"
-                    tag_obj = Tag(
-                        face_data_id=face_data_id,
+                    tag_obj = PoolTag(
+                        profile_id=profile_id,
                         tag_name=tag_category,
                         tag_level=tag_level,
                         tag_value=tag_value
                     )
                 else:
                     # 0차, 1차 태그 또는 패턴이 맞지 않는 태그
-                    tag_obj = Tag(
-                        face_data_id=face_data_id,
+                    tag_obj = PoolTag(
+                        profile_id=profile_id,
                         tag_name=tag.strip(),
                         tag_level=tag_level,
                         tag_value=None
@@ -371,19 +375,19 @@ class DatabaseCRUD:
 
         # 2차 태그 자동 생성 (임계값 기반)
         if landmarks:
-            self.auto_generate_secondary_tags(session, face_data_id, landmarks)
+            self.auto_generate_secondary_tags(session, profile_id, landmarks)
 
         # Landmark 데이터를 별도 테이블에 저장
         if landmarks:
-            self.save_landmarks_to_table(session, face_data_id, landmarks)
+            self.save_landmarks_to_table(session, profile_id, landmarks)
 
-    def save_landmarks_to_table(self, session, face_data_id: int, landmarks):
+    def save_landmarks_to_table(self, session, profile_id: int, landmarks):
         """landmarks 데이터를 별도 Landmark 테이블에 저장"""
         if not landmarks:
             return
 
         # 기존 landmarks 삭제 (중복 방지)
-        session.query(Landmark).filter_by(face_data_id=face_data_id).delete()
+        session.query(PoolLandmark).filter_by(profile_id=profile_id).delete()
 
         # landmarks가 JSON 문자열인 경우 파싱
         if isinstance(landmarks, str):
@@ -391,14 +395,14 @@ class DatabaseCRUD:
             try:
                 landmarks = json.loads(landmarks)
             except json.JSONDecodeError:
-                print(f"Warning: Invalid JSON in landmarks for face_data_id {face_data_id}")
+                print(f"Warning: Invalid JSON in landmarks for profile_id {profile_id}")
                 return
 
         # 각 landmark 포인트를 테이블에 저장 (소수점 3자리까지만)
         for landmark in landmarks:
             if isinstance(landmark, dict) and 'mpidx' in landmark:
-                landmark_obj = Landmark(
-                    face_data_id=face_data_id,
+                landmark_obj = PoolLandmark(
+                    profile_id=profile_id,
                     mp_idx=landmark.get('mpidx'),
                     x=round(landmark.get('x', 0.0), 3),
                     y=round(landmark.get('y', 0.0), 3),
@@ -406,13 +410,13 @@ class DatabaseCRUD:
                 )
                 session.add(landmark_obj)
 
-    def remove_all_tags_for_face(self, session, face_data_id: int):
-        """특정 얼굴의 모든 태그 삭제"""
-        session.query(Tag).filter_by(face_data_id=face_data_id).delete()
+    def remove_all_tags_for_face(self, session, profile_id: int):
+        """특정 프로필의 모든 태그 삭제"""
+        session.query(PoolTag).filter_by(profile_id=profile_id).delete()
 
-    def remove_all_landmarks_for_face(self, session, face_data_id: int):
-        """특정 얼굴의 모든 landmarks 삭제"""
-        session.query(Landmark).filter_by(face_data_id=face_data_id).delete()
+    def remove_all_landmarks_for_face(self, session, profile_id: int):
+        """특정 프로필의 모든 landmarks 삭제"""
+        session.query(PoolLandmark).filter_by(profile_id=profile_id).delete()
 
     # ==================== 통계 ====================
 
@@ -420,33 +424,35 @@ class DatabaseCRUD:
         """데이터베이스 통계"""
         from database.connect_db import db_manager
         with db_manager.get_session() as session:
-            face_count = session.query(FaceData).count()
-            landmark_count = session.query(Landmark).count()
-            tag_count = session.query(Tag).count()
-            definition_count = session.query(TagMeasurementDefinition).count()
+            pool_profile_count = session.query(PoolProfile).count()
+            pool_landmark_count = session.query(PoolLandmark).count()
+            pool_tag_count = session.query(PoolTag).count()
+            definition_count = session.query(Pool2ndTagDef).count()
+            user_profile_count = session.query(UserProfile).count()
 
             return {
-                'face_count': face_count,
-                'landmark_count': landmark_count,
-                'tag_count': tag_count,
-                'measurement_definition_count': definition_count
+                'pool_profile_count': pool_profile_count,
+                'pool_landmark_count': pool_landmark_count,
+                'pool_tag_count': pool_tag_count,
+                'measurement_definition_count': definition_count,
+                'user_profile_count': user_profile_count
             }
 
     def get_faces_by_tag(self, tag_name: str) -> List[Dict]:
-        """태그로 얼굴들 조회"""
+        """태그로 프로필들 조회"""
         from database.connect_db import db_manager
         with db_manager.get_session() as session:
             # JOIN 쿼리
-            faces = session.query(FaceData).join(Tag).filter(
-                Tag.tag_name == tag_name
+            profiles = session.query(PoolProfile).join(PoolTag).filter(
+                PoolTag.tag_name == tag_name
             ).all()
 
-            return [face.to_dict() for face in faces]
+            return [profile.to_dict() for profile in profiles]
 
     # ==================== 데이터 생성 ====================
 
     def create_face_data_from_json(self, session, json_data, name=None):
-        """JSON 데이터로부터 FaceData 객체 생성 및 태그 추가 (공통 로직)"""
+        """JSON 데이터로부터 PoolProfile 객체 생성 및 태그 추가 (공통 로직)"""
         from utils.ratio_parser import RatioParser
         import json
         from datetime import datetime
@@ -454,19 +460,19 @@ class DatabaseCRUD:
         parser = RatioParser()
         ratio_components = parser.parse_ratio_to_components(json_data.get('faceRatio', ''))
 
-        # FaceData 객체 생성 (기본 정보만)
-        face_data = FaceData(
+        # PoolProfile 객체 생성 (기본 정보만)
+        profile = PoolProfile(
             name=name or json_data.get('name', 'unknown'),
             json_file_path=json_data.get('_filename', ''),
             image_file_path=None  # 추후 연동
         )
 
-        session.add(face_data)
+        session.add(profile)
         session.flush()  # ID 생성을 위해
 
-        # FaceBasicMeasurements 객체 생성 (수치 데이터)
-        measurements = FaceBasicMeasurements(
-            face_data_id=face_data.id,
+        # PoolBasicRatio 객체 생성 (수치 데이터)
+        basic_ratio = PoolBasicRatio(
+            profile_id=profile.id,
             roll_angle=json_data.get('rollAngle', 0),
             face_basic_ratio=json_data.get('faceRatio', ''),
             ratio_1=ratio_components.get('ratio_1'),
@@ -479,32 +485,32 @@ class DatabaseCRUD:
             ratio_3_2=ratio_components.get('ratio_3_2')
         )
 
-        session.add(measurements)
+        session.add(basic_ratio)
 
         # 태그 처리 (통합된 메서드 사용)
         self.process_tags_for_face(
             session,
-            face_data.id,
+            profile.id,
             json_data.get('tags', []),
             json_data.get('landmarks', [])
         )
 
-        return face_data
+        return profile
 
     def update_face_tags(self, session, face_id: int, tags_data, landmarks=None):
-        """기존 얼굴의 태그 업데이트"""
-        
+        """기존 프로필의 태그 업데이트"""
+
         # 기존 태그 삭제 후 새 태그 추가
         self.remove_all_tags_for_face(session, face_id)
         self.process_tags_for_face(session, face_id, tags_data, landmarks)
 
-    def delete_face_data(self, session, face_data):
-        """얼굴 데이터 및 관련 태그 삭제"""
-        
+    def delete_face_data(self, session, profile):
+        """프로필 데이터 및 관련 태그 삭제"""
+
         # 관련 태그 먼저 삭제
-        self.remove_all_tags_for_face(session, face_data.id)
+        self.remove_all_tags_for_face(session, profile.id)
         # 레코드 삭제
-        session.delete(face_data)
+        session.delete(profile)
 
     # ==================== 측정 계산 ====================
 

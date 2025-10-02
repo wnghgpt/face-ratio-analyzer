@@ -10,7 +10,7 @@ from sqlalchemy import text
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from database.connect_db import db_manager
-from database.schema_def import Base, TagMeasurementDefinition, TagThreshold
+from database.schema_def import Base, Pool2ndTagDef, PoolTagThreshold, PoolTagRelation
 import json
 
 class SchemaManager:
@@ -42,18 +42,24 @@ class SchemaManager:
         """사용하지 않는 테이블 삭제"""
         print("🗑️ 불필요한 테이블 삭제 중...")
 
-        unused_tables = [
+        # 기존 테이블명들 삭제
+        old_tables = [
             'analysis_configs',
             'analysis_results',
             'custom_variables',
-            'tag_measurement_definitions',  # 스키마 변경 시 재생성
-            'tag_thresholds',  # 스키마 변경 시 재생성
-            'face_measurement_values'  # 스키마 변경 시 재생성
+            'face_data',
+            'face_basic_measurements',
+            'landmarks',
+            'tags',
+            'tag_measurement_definitions',
+            'tag_thresholds',
+            'face_measurement_values',
+            'pool_tag_relation'  # 스키마 변경으로 재생성 필요
         ]
 
         try:
             with db_manager.get_session() as session:
-                for table in unused_tables:
+                for table in old_tables:
                     try:
                         session.execute(text(f"DROP TABLE IF EXISTS {table}"))
                         print(f"   ✅ {table} 삭제됨")
@@ -87,7 +93,7 @@ class SchemaManager:
 
             with db_manager.get_session() as session:
                 # 기존 데이터 확인
-                existing_count = session.query(TagMeasurementDefinition).count()
+                existing_count = session.query(Pool2ndTagDef).count()
 
                 if existing_count > 0:
                     print(f"📋 기존 측정 정의 {existing_count}개 존재")
@@ -95,7 +101,7 @@ class SchemaManager:
 
                 # 새 데이터 추가
                 for definition in definitions:
-                    new_def = TagMeasurementDefinition(
+                    new_def = Pool2ndTagDef(
                         tag_name=definition['tag_name'],
                         measurement_type=definition['measurement_type'],
                         description=definition.get('description'),
@@ -110,7 +116,7 @@ class SchemaManager:
 
                 session.commit()
 
-                final_count = session.query(TagMeasurementDefinition).count()
+                final_count = session.query(Pool2ndTagDef).count()
                 print(f"✅ {final_count}개 측정 정의 로드 완료")
 
         except Exception as e:
@@ -138,7 +144,7 @@ class SchemaManager:
 
             with db_manager.get_session() as session:
                 # 기존 데이터 확인
-                existing_count = session.query(TagThreshold).count()
+                existing_count = session.query(PoolTagThreshold).count()
 
                 if existing_count > 0:
                     print(f"📋 기존 임계값 정의 {existing_count}개 존재")
@@ -146,7 +152,7 @@ class SchemaManager:
 
                 # 새 데이터 추가
                 for threshold in thresholds:
-                    new_threshold = TagThreshold(
+                    new_threshold = PoolTagThreshold(
                         tag_name=threshold['tag_name'],
                         value_name=threshold['value_name'],
                         min_threshold=threshold.get('min_threshold'),
@@ -156,11 +162,56 @@ class SchemaManager:
 
                 session.commit()
 
-                final_count = session.query(TagThreshold).count()
+                final_count = session.query(PoolTagThreshold).count()
                 print(f"✅ {final_count}개 임계값 정의 로드 완료")
 
         except Exception as e:
             print(f"❌ 임계값 정의 초기화 실패: {e}")
+            return False
+
+        return True
+
+    def initialize_tag_relations(self):
+        """태그 관계 정의 초기 데이터 로드"""
+        print("🔗 태그 관계 정의 초기화 중...")
+
+        json_file = os.path.join(
+            os.path.dirname(os.path.dirname(__file__)),
+            'source_data', 'tag_relations.json'
+        )
+
+        if not os.path.exists(json_file):
+            print(f"⚠️ JSON 파일 없음: {json_file}")
+            return True
+
+        try:
+            with open(json_file, 'r', encoding='utf-8') as f:
+                relations = json.load(f)
+
+            with db_manager.get_session() as session:
+                # 기존 데이터 확인
+                existing_count = session.query(PoolTagRelation).count()
+
+                if existing_count > 0:
+                    print(f"📋 기존 태그 관계 {existing_count}개 존재")
+                    return True
+
+                # 새 데이터 추가
+                for relation in relations:
+                    new_relation = PoolTagRelation(
+                        parent_tags=relation['parent_tags'],
+                        child_tags=relation['child_tags'],
+                        parent_level=relation['parent_level']
+                    )
+                    session.add(new_relation)
+
+                session.commit()
+
+                final_count = session.query(PoolTagRelation).count()
+                print(f"✅ {final_count}개 태그 관계 로드 완료")
+
+        except Exception as e:
+            print(f"❌ 태그 관계 초기화 실패: {e}")
             return False
 
         return True
@@ -186,6 +237,10 @@ class SchemaManager:
 
         # 4. 임계값 정의 초기화
         if not self.initialize_threshold_definitions():
+            success = False
+
+        # 5. 태그 관계 초기화
+        if not self.initialize_tag_relations():
             success = False
 
         if success:

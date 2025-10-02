@@ -5,7 +5,7 @@ import pandas as pd
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from contextlib import contextmanager
-from .schema_def import Base, FaceData
+from .schema_def import Base, PoolProfile
 from .data_handler import crud_service
 import hashlib
 import json
@@ -59,7 +59,7 @@ class DatabaseManager:
             for json_data in json_data_list:
                 try:
                     # 기존 데이터 체크 (이름 기준)
-                    existing = session.query(FaceData).filter_by(name=json_data.get('name')).first()
+                    existing = session.query(PoolProfile).filter_by(name=json_data.get('name')).first()
                     if existing:
                         continue  # 이미 존재하면 스킵
 
@@ -100,7 +100,7 @@ class DatabaseManager:
 
         with self.get_session() as session:
             # DB의 기존 데이터들
-            existing_records = session.query(FaceData).all()
+            existing_records = session.query(PoolProfile).all()
             db_names = {record.name: record for record in existing_records}
 
             added_count = 0
