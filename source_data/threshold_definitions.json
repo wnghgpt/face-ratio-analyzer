@@ -126,6 +126,24 @@
     "max_threshold": null
   },
   {
+    "tag_name": "eye-동공간거리",
+    "value_name": "가까운",
+    "min_threshold": null,
+    "max_threshold": 0.3
+  },
+  {
+    "tag_name": "eye-동공간거리",
+    "value_name": "보통",
+    "min_threshold": 0.3,
+    "max_threshold": 0.7
+  },
+  {
+    "tag_name": "eye-동공간거리",
+    "value_name": "먼",
+    "min_threshold": 0.7,
+    "max_threshold": null
+  },
+  {
     "tag_name": "eye-동공가려짐",
     "value_name": "과노출",
     "min_threshold": null,

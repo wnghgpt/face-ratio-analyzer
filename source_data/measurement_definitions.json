@@ -231,17 +231,6 @@
     "곡률점리스트": null
   },
   {
-    "tag_name": "eye-미간",
-    "measurement_type": "길이",
-    "description": "양 눈 사이의 거리",
-    "거리계산방식": "x좌표거리",
-    "분자_점1": null,
-    "분자_점2": null,
-    "분모_점1": null,
-    "분모_점2": null,
-    "곡률점리스트": null
-  },
-  {
     "tag_name": "eye-모양",
     "measurement_type": "비율",
     "description": "눈의 가로 세로 비율",
@@ -253,12 +242,34 @@
     "곡률점리스트": null
   },
   {
-    "tag_name": "eye-크기",
+    "tag_name": "eye-미간",
     "measurement_type": "길이",
-    "description": "눈의 좌우 끝점 간 거리",
-    "거리계산방식": "직선거리",
-    "분자_점1": 33,
-    "분자_점2": 133,
+    "description": "양 눈 사이의 거리",
+    "거리계산방식": "x좌표거리",
+    "분자_점1": null,
+    "분자_점2": null,
+    "분모_점1": null,
+    "분모_점2": null,
+    "곡률점리스트": null
+  },
+  {
+    "tag_name": "eye-동공간거리",
+    "measurement_type": "길이",
+    "description": "양 동공 사이의 거리",
+    "거리계산방식": "x좌표거리",
+    "분자_점1": null,
+    "분자_점2": null,
+    "분모_점1": null,
+    "분모_점2": null,
+    "곡률점리스트": null
+  },
+  {
+    "tag_name": "eye-동공가려짐",
+    "measurement_type": "비율",
+    "description": "동공의 가려짐 정도",
+    "거리계산방식": "y좌표거리",
+    "분자_점1": null,
+    "분자_점2": null,
     "분모_점1": null,
     "분모_점2": null,
     "곡률점리스트": null
@@ -311,17 +322,6 @@
     "tag_name": "eye-눈밑지",
     "measurement_type": "길이",
     "description": "눈밑지방의 돌출 정도",
-    "거리계산방식": "직선거리",
-    "분자_점1": null,
-    "분자_점2": null,
-    "분모_점1": null,
-    "분모_점2": null,
-    "곡률점리스트": null
-  },
-  {
-    "tag_name": "eye-동공",
-    "measurement_type": "비율",
-    "description": "동공의 노출 비율",
     "거리계산방식": "직선거리",
     "분자_점1": null,
     "분자_점2": null,
