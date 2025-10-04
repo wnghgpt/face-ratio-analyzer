@@ -169,19 +169,19 @@
   },
   {
     "tag_name": "eye-각도",
-    "value_name": "처진",
+    "value_name": "작은",
     "min_threshold": null,
     "max_threshold": 0.3
   },
   {
     "tag_name": "eye-각도",
-    "value_name": "평행",
+    "value_name": "보통",
     "min_threshold": 0.3,
     "max_threshold": 0.7
   },
   {
     "tag_name": "eye-각도",
-    "value_name": "올라간",
+    "value_name": "큰",
     "min_threshold": 0.7,
     "max_threshold": null
   },
