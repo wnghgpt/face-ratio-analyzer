@@ -232,6 +232,7 @@ class DatabaseCRUD:
                 measurement_value = Pool2ndTagValue(
                     profile_id=profile_id,
                     tag_name=definition.tag_name,
+                    side=definition.side,
                     측정값=calculated_value
                 )
                 session.add(measurement_value)
@@ -241,10 +242,15 @@ class DatabaseCRUD:
                     tag_value = self.classify_by_threshold(session, definition.tag_name, calculated_value)
 
                     if tag_value:
-                        # 3. 2차 태그 저장
+                        # 3. 2차 태그 저장 (tag_name에 side 추가)
+                        if definition.side == "center":
+                            full_tag_name = definition.tag_name
+                        else:
+                            full_tag_name = f"{definition.tag_name}-{definition.side}"
+
                         secondary_tag = PoolTag(
                             profile_id=profile_id,
-                            tag_name=definition.tag_name,  # "eye-길이"
+                            tag_name=full_tag_name,  # "eye-길이-left", "eye-길이-right" 또는 "forehead-높이"
                             tag_level=2,
                             tag_value=tag_value  # "긴", "보통", "짧은"
                         )
@@ -286,6 +292,30 @@ class DatabaseCRUD:
                         distance = math.sqrt((p1['x'] - p2['x'])**2 + (p1['y'] - p2['y'])**2)
 
                     return distance
+
+            elif definition.measurement_type == "각도":
+                # 각도 측정 (분자만 사용)
+                if definition.분자_점1 is not None and definition.분자_점2 is not None:
+                    if definition.분자_점1 not in landmarks_dict or definition.분자_점2 not in landmarks_dict:
+                        return None
+
+                    p1 = landmarks_dict[definition.분자_점1]
+                    p2 = landmarks_dict[definition.분자_점2]
+
+                    # 두 점을 잇는 선분과 x축 사이의 각도 (항상 예각)
+                    dx = p2['x'] - p1['x']
+                    dy = p2['y'] - p1['y']
+                    # atan2는 -π ~ π 범위의 라디안 반환
+                    angle_rad = math.atan2(dy, dx)
+                    # 라디안을 도(degree)로 변환
+                    angle_deg = math.degrees(angle_rad)
+                    # 항상 양수로 변환
+                    angle_deg = abs(angle_deg)
+                    # 예각으로 변환 (90도 초과시 180 - angle)
+                    if angle_deg > 90:
+                        angle_deg = 180 - angle_deg
+
+                    return angle_deg
 
             elif definition.measurement_type == "비율":
                 # 비율 측정 (분자/분모)

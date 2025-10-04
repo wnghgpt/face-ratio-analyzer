@@ -54,7 +54,9 @@ class SchemaManager:
             'tag_measurement_definitions',
             'tag_thresholds',
             'face_measurement_values',
-            'pool_tag_relation'  # 스키마 변경으로 재생성 필요
+            'pool_tag_relation',  # 스키마 변경으로 재생성 필요
+            'pool_2nd_tag_def',  # side 컬럼 추가로 재생성
+            'pool_2nd_tag_values'  # side 컬럼 추가로 재생성
         ]
 
         try:
@@ -103,6 +105,7 @@ class SchemaManager:
                 for definition in definitions:
                     new_def = Pool2ndTagDef(
                         tag_name=definition['tag_name'],
+                        side=definition.get('side', 'center'),
                         measurement_type=definition['measurement_type'],
                         description=definition.get('description'),
                         거리계산방식=definition.get('거리계산방식'),

@@ -168,6 +168,24 @@
     "max_threshold": null
   },
   {
+    "tag_name": "eye-각도",
+    "value_name": "처진",
+    "min_threshold": null,
+    "max_threshold": 0.3
+  },
+  {
+    "tag_name": "eye-각도",
+    "value_name": "평행",
+    "min_threshold": 0.3,
+    "max_threshold": 0.7
+  },
+  {
+    "tag_name": "eye-각도",
+    "value_name": "올라간",
+    "min_threshold": 0.7,
+    "max_threshold": null
+  },
+  {
     "tag_name": "nose-길이",
     "value_name": "짧은",
     "min_threshold": null,

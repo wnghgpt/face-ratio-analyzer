@@ -1,7 +1,7 @@
 """
 데이터베이스 모델 정의
 """
-from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime, Text, ForeignKey, JSON, Numeric
+from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime, Text, ForeignKey, JSON, Numeric, UniqueConstraint, Index
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker
 from datetime import datetime
@@ -149,7 +149,8 @@ class Pool2ndTagDef(Base):
     __tablename__ = 'pool_2nd_tag_def'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    tag_name = Column(String(100), unique=True, nullable=False)
+    tag_name = Column(String(100), nullable=False)
+    side = Column(String(10), default="center", nullable=False)  # "left", "right", "center"
     measurement_type = Column(String(20), nullable=False)  # "길이", "비율", "곡률"
     description = Column(Text)
 
@@ -167,10 +168,16 @@ class Pool2ndTagDef(Base):
     # 곡률 측정용 (곡률일 때만 사용)
     곡률점리스트 = Column(JSON)
 
+    # unique constraint: (tag_name, side) 조합이 unique
+    __table_args__ = (
+        UniqueConstraint('tag_name', 'side', name='unique_tag_side'),
+    )
+
     def to_dict(self):
         return {
             'id': self.id,
             'tag_name': self.tag_name,
+            'side': self.side,
             'measurement_type': self.measurement_type,
             'description': self.description,
             '거리계산방식': self.거리계산방식,
@@ -209,16 +216,23 @@ class Pool2ndTagValue(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     profile_id = Column(Integer, ForeignKey('pool_profiles.id'), nullable=False)
     tag_name = Column(String(100), nullable=False)  # "eye-길이", "nose-콧볼" 등
+    side = Column(String(10), default="center", nullable=False)  # "left", "right", "center"
     측정값 = Column(Float, nullable=True)  # 실제 계산된 값 (계산 불가시 NULL)
 
     # 관계
     profile = relationship("PoolProfile", back_populates="measurement_values")
+
+    # index 추가 (조회 성능)
+    __table_args__ = (
+        Index('idx_profile_tag_side', 'profile_id', 'tag_name', 'side'),
+    )
 
     def to_dict(self):
         return {
             'id': self.id,
             'profile_id': self.profile_id,
             'tag_name': self.tag_name,
+            'side': self.side,
             '측정값': self.측정값
         }
 
