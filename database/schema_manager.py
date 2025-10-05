@@ -76,7 +76,7 @@ class SchemaManager:
 
         return True
 
-    def initialize_measurement_definitions(self):
+    def initialize_measurement_definitions(self, skip_if_exists=True):
         """측정 정의 초기 데이터 로드"""
         print("📊 측정 정의 초기화 중...")
 
@@ -97,7 +97,7 @@ class SchemaManager:
                 # 기존 데이터 확인
                 existing_count = session.query(Pool2ndTagDef).count()
 
-                if existing_count > 0:
+                if existing_count > 0 and skip_if_exists:
                     print(f"📋 기존 측정 정의 {existing_count}개 존재")
                     return True
 
@@ -128,7 +128,7 @@ class SchemaManager:
 
         return True
 
-    def initialize_threshold_definitions(self):
+    def initialize_threshold_definitions(self, skip_if_exists=True):
         """임계값 정의 초기 데이터 로드"""
         print("📏 임계값 정의 초기화 중...")
 
@@ -149,7 +149,7 @@ class SchemaManager:
                 # 기존 데이터 확인
                 existing_count = session.query(PoolTagThreshold).count()
 
-                if existing_count > 0:
+                if existing_count > 0 and skip_if_exists:
                     print(f"📋 기존 임계값 정의 {existing_count}개 존재")
                     return True
 
@@ -174,7 +174,7 @@ class SchemaManager:
 
         return True
 
-    def initialize_tag_relations(self):
+    def initialize_tag_relations(self, skip_if_exists=True):
         """태그 관계 정의 초기 데이터 로드"""
         print("🔗 태그 관계 정의 초기화 중...")
 
@@ -195,7 +195,7 @@ class SchemaManager:
                 # 기존 데이터 확인
                 existing_count = session.query(PoolTagRelation).count()
 
-                if existing_count > 0:
+                if existing_count > 0 and skip_if_exists:
                     print(f"📋 기존 태그 관계 {existing_count}개 존재")
                     return True
 
@@ -219,35 +219,66 @@ class SchemaManager:
 
         return True
 
-    def setup_database(self):
-        """전체 데이터베이스 설정"""
-        print("🚀 데이터베이스 전체 설정 시작")
+    def reset_database_dev(self):
+        """개발용: 전체 DB 초기화 후 재생성"""
+        print("🔄 [개발 모드] 데이터베이스 전체 초기화 중...")
+        print("=" * 50)
+        print("⚠️  WARNING: 모든 테이블과 데이터가 삭제됩니다!")
+        print("=" * 50)
+
+        try:
+            # 1. 모든 테이블 삭제
+            print("\n🗑️  모든 테이블 삭제 중...")
+            Base.metadata.drop_all(bind=self.engine)
+            print("✅ 삭제 완료")
+
+            # 2. 모든 테이블 재생성
+            print("\n🔧 모든 테이블 재생성 중...")
+            Base.metadata.create_all(bind=self.engine)
+            print("✅ 생성 완료")
+
+            # 생성된 테이블 확인
+            with db_manager.get_session() as session:
+                result = session.execute(text("SHOW TABLES")).fetchall()
+                tables = [row[0] for row in result]
+                print(f"📋 생성된 테이블 ({len(tables)}개): {', '.join(tables)}")
+
+            # 3. 초기 데이터 로드 (무조건 로드)
+            print("\n📊 초기 데이터 로드 중...")
+            self.initialize_measurement_definitions(skip_if_exists=False)
+            self.initialize_threshold_definitions(skip_if_exists=False)
+            self.initialize_tag_relations(skip_if_exists=False)
+
+            print("\n🎉 [개발 모드] 데이터베이스 초기화 완료!")
+            return True
+
+        except Exception as e:
+            print(f"\n❌ 초기화 실패: {e}")
+            return False
+
+    def setup_database_prod(self):
+        """배포용: 안전하게 생성만 (기존 테이블 유지)"""
+        print("🚀 [배포 모드] 데이터베이스 설정 시작")
         print("=" * 50)
 
         success = True
 
-        # 1. 불필요한 테이블 삭제
-        if not self.drop_unused_tables():
-            success = False
-
-        # 2. 모든 테이블 생성
+        # 1. 없는 테이블만 생성 (기존 테이블 유지)
         if not self.create_all_tables():
             success = False
 
-        # 3. 측정 정의 초기화
-        if not self.initialize_measurement_definitions():
+        # 2. 초기 데이터 로드 (기존 데이터 있으면 건너뜀)
+        if not self.initialize_measurement_definitions(skip_if_exists=True):
             success = False
 
-        # 4. 임계값 정의 초기화
-        if not self.initialize_threshold_definitions():
+        if not self.initialize_threshold_definitions(skip_if_exists=True):
             success = False
 
-        # 5. 태그 관계 초기화
-        if not self.initialize_tag_relations():
+        if not self.initialize_tag_relations(skip_if_exists=True):
             success = False
 
         if success:
-            print("\n🎉 데이터베이스 설정 완료!")
+            print("\n🎉 [배포 모드] 데이터베이스 설정 완료!")
         else:
             print("\n❌ 설정 중 일부 오류 발생")
 
@@ -255,8 +286,24 @@ class SchemaManager:
 
 def main():
     """메인 함수"""
+    import sys
+
+    # 실행 모드 결정
+    mode = sys.argv[1] if len(sys.argv) > 1 else "dev"
+
     manager = SchemaManager()
-    manager.setup_database()
+
+    if mode == "dev":
+        print("📌 개발 모드로 실행합니다.")
+        manager.reset_database_dev()
+    elif mode == "prod":
+        print("📌 배포 모드로 실행합니다.")
+        manager.setup_database_prod()
+    else:
+        print(f"❌ 알 수 없는 모드: {mode}")
+        print("사용법: python schema_manager.py [dev|prod]")
+        print("  dev  - 개발 모드 (전체 초기화)")
+        print("  prod - 배포 모드 (안전 생성)")
 
 if __name__ == "__main__":
     main()

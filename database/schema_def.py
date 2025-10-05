@@ -138,9 +138,9 @@ class PoolLandmark(Base):
             'id': self.id,
             'profile_id': self.profile_id,
             'mp_idx': self.mp_idx,
-            'x': self.x,
-            'y': self.y,
-            'z': self.z
+            'x': round(float(self.x), 3) if self.x is not None else None,
+            'y': round(float(self.y), 3) if self.y is not None else None,
+            'z': round(float(self.z), 3) if self.z is not None else None
         }
 
 
@@ -305,9 +305,9 @@ class UserLandmark(Base):
             'id': self.id,
             'user_id': self.user_id,
             'mp_idx': self.mp_idx,
-            'x': self.x,
-            'y': self.y,
-            'z': self.z
+            'x': round(float(self.x), 3) if self.x is not None else None,
+            'y': round(float(self.y), 3) if self.y is not None else None,
+            'z': round(float(self.z), 3) if self.z is not None else None
         }
 
 
