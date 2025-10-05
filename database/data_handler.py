@@ -351,6 +351,49 @@ class DatabaseCRUD:
                     if denominator != 0:
                         return numerator / denominator
 
+            elif definition.measurement_type == "3구간비율":
+                # 3구간 비율 측정 (1:x:y 형식)
+                # 분자_점1-분자_점2: 첫 번째 구간 (기준=1)
+                # 분자_점2-분모_점1: 두 번째 구간
+                # 분모_점1-분모_점2: 세 번째 구간
+                if (definition.분자_점1 is not None and definition.분자_점2 is not None and
+                    definition.분모_점1 is not None and definition.분모_점2 is not None):
+
+                    if (definition.분자_점1 not in landmarks_dict or definition.분자_점2 not in landmarks_dict or
+                        definition.분모_점1 not in landmarks_dict or definition.분모_점2 not in landmarks_dict):
+                        return None
+
+                    # 3개 점 추출
+                    p1 = landmarks_dict[definition.분자_점1]
+                    p2 = landmarks_dict[definition.분자_점2]
+                    p3 = landmarks_dict[definition.분모_점1]
+                    p4 = landmarks_dict[definition.분모_점2]
+
+                    # 거리 계산 방식에 따라 3개 구간 거리 계산
+                    if definition.거리계산방식 == "직선거리":
+                        seg1 = math.sqrt((p1['x'] - p2['x'])**2 + (p1['y'] - p2['y'])**2)
+                        seg2 = math.sqrt((p2['x'] - p3['x'])**2 + (p2['y'] - p3['y'])**2)
+                        seg3 = math.sqrt((p3['x'] - p4['x'])**2 + (p3['y'] - p4['y'])**2)
+                    elif definition.거리계산방식 == "x좌표거리":
+                        seg1 = abs(p1['x'] - p2['x'])
+                        seg2 = abs(p2['x'] - p3['x'])
+                        seg3 = abs(p3['x'] - p4['x'])
+                    elif definition.거리계산방식 == "y좌표거리":
+                        seg1 = abs(p1['y'] - p2['y'])
+                        seg2 = abs(p2['y'] - p3['y'])
+                        seg3 = abs(p3['y'] - p4['y'])
+                    else:
+                        seg1 = math.sqrt((p1['x'] - p2['x'])**2 + (p1['y'] - p2['y'])**2)
+                        seg2 = math.sqrt((p2['x'] - p3['x'])**2 + (p2['y'] - p3['y'])**2)
+                        seg3 = math.sqrt((p3['x'] - p4['x'])**2 + (p3['y'] - p4['y'])**2)
+
+                    # 첫 번째 구간을 1로 기준
+                    if seg1 != 0:
+                        ratio_x = seg2 / seg1
+                        ratio_y = seg3 / seg1
+                        # "1:x:y" 형식으로 반환
+                        return f"1:{ratio_x:.2f}:{ratio_y:.2f}"
+
             elif definition.measurement_type == "곡률":
                 # 곡률 측정 (향후 구현)
                 return None

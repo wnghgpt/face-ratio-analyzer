@@ -592,5 +592,23 @@
     "value_name": "많음",
     "min_threshold": 0.7,
     "max_threshold": null
+  },
+  {
+    "tag_name": "eye-동공크기",
+    "value_name": "작은",
+    "min_threshold": null,
+    "max_threshold": 15
+  },
+  {
+    "tag_name": "eye-동공크기",
+    "value_name": "보통",
+    "min_threshold": 15,
+    "max_threshold": 25
+  },
+  {
+    "tag_name": "eye-동공크기",
+    "value_name": "큰",
+    "min_threshold": 25,
+    "max_threshold": null
   }
 ]
