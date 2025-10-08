@@ -456,13 +456,29 @@ class DatabaseCRUD:
         if landmarks:
             self.save_landmarks_to_table(session, profile_id, landmarks)
 
-    def save_landmarks_to_table(self, session, profile_id: int, landmarks):
-        """landmarks 데이터를 별도 Landmark 테이블에 저장"""
+    def save_landmarks_to_table(self, session, profile_id: int, landmarks, is_user: bool = False):
+        """landmarks 데이터를 별도 Landmark 테이블에 저장
+
+        Args:
+            session: DB session
+            profile_id: Profile ID (Pool) or User ID (User)
+            landmarks: landmarks 데이터
+            is_user: True면 UserLandmark, False면 PoolLandmark
+        """
         if not landmarks:
             return
 
+        # 테이블 선택
+        if is_user:
+            from database.schema_def import UserLandmark
+            LandmarkModel = UserLandmark
+            id_field = 'user_id'
+        else:
+            LandmarkModel = PoolLandmark
+            id_field = 'profile_id'
+
         # 기존 landmarks 삭제 (중복 방지)
-        session.query(PoolLandmark).filter_by(profile_id=profile_id).delete()
+        session.query(LandmarkModel).filter_by(**{id_field: profile_id}).delete()
 
         # landmarks가 JSON 문자열인 경우 파싱
         if isinstance(landmarks, str):
@@ -470,14 +486,14 @@ class DatabaseCRUD:
             try:
                 landmarks = json.loads(landmarks)
             except json.JSONDecodeError:
-                print(f"Warning: Invalid JSON in landmarks for profile_id {profile_id}")
+                print(f"Warning: Invalid JSON in landmarks for {id_field} {profile_id}")
                 return
 
         # 각 landmark 포인트를 테이블에 저장 (소수점 3자리까지만)
         for landmark in landmarks:
             if isinstance(landmark, dict) and 'mpidx' in landmark:
-                landmark_obj = PoolLandmark(
-                    profile_id=profile_id,
+                landmark_obj = LandmarkModel(
+                    **{id_field: profile_id},
                     mp_idx=landmark.get('mpidx'),
                     x=round(landmark.get('x', 0.0), 3),
                     y=round(landmark.get('y', 0.0), 3),

@@ -242,6 +242,7 @@ class UserProfile(Base):
     # 관계
     tags = relationship("UserTag", back_populates="user", cascade="all, delete-orphan")
     landmarks_points = relationship("UserLandmark", back_populates="user", cascade="all, delete-orphan")
+    measurement_values = relationship("User2ndTagValue", back_populates="user", cascade="all, delete-orphan")
 
     def to_dict(self, include_password=False):
         """딕셔너리로 변환"""
@@ -316,6 +317,34 @@ class UserTag(Base):
             'tag_name': self.tag_name,
             'tag_level': self.tag_level,
             'tag_value': self.tag_value
+        }
+
+
+class User2ndTagValue(Base):
+    """유저 2차 태그 측정값 테이블"""
+    __tablename__ = 'user_2nd_tag_values'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey('user_profiles.user_id'), nullable=False)
+    tag_name = Column(String(100), nullable=False)  # "eye-길이", "nose-콧볼" 등
+    side = Column(String(10), default="center", nullable=False)  # "left", "right", "center"
+    측정값 = Column(Float, nullable=True)  # 실제 계산된 값 (계산 불가시 NULL)
+
+    # 관계
+    user = relationship("UserProfile", back_populates="measurement_values")
+
+    # index 추가 (조회 성능)
+    __table_args__ = (
+        Index('idx_user_tag_side', 'user_id', 'tag_name', 'side'),
+    )
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'user_id': self.user_id,
+            'tag_name': self.tag_name,
+            'side': self.side,
+            '측정값': self.측정값
         }
 
 
