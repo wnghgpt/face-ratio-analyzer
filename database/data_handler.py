@@ -14,6 +14,7 @@ from database.schema_def import (
     Pool2ndTagDef, PoolTagThreshold, Pool2ndTagValue,
     UserProfile, UserLandmark, UserTag, PoolTagRelation
 )
+from database.ratio_storage import calculate_and_save_ratios
 import pandas as pd
 import json
 import hashlib
@@ -49,14 +50,14 @@ class DatabaseCRUD:
                     start_date, end_date = filters['date_range']
                     query = query.filter(PoolProfile.upload_date.between(start_date, end_date))
 
-                # 비율 범위 필터
-                if 'ratio_x_range' in filters and filters['ratio_x_range']:
-                    min_val, max_val = filters['ratio_x_range']
-                    query = query.filter(PoolBasicRatio.ratio_2.between(min_val, max_val))
-
-                if 'ratio_y_range' in filters and filters['ratio_y_range']:
-                    min_val, max_val = filters['ratio_y_range']
-                    query = query.filter(PoolBasicRatio.ratio_3.between(min_val, max_val))
+                # 비율 범위 필터는 새로운 스키마에서는 다르게 처리 필요
+                # TODO: PoolBasicRatio의 새 구조(part, ratio_type, side)에 맞게 필터링 재구현
+                # if 'ratio_x_range' in filters and filters['ratio_x_range']:
+                #     min_val, max_val = filters['ratio_x_range']
+                #     query = query.filter(PoolBasicRatio.calculated_value...)
+                # if 'ratio_y_range' in filters and filters['ratio_y_range']:
+                #     min_val, max_val = filters['ratio_y_range']
+                #     query = query.filter(PoolBasicRatio.calculated_value...)
 
             results = query.all()
             return [result.to_dict() for result in results]
@@ -228,17 +229,18 @@ class DatabaseCRUD:
                 # 측정값 계산
                 calculated_value = self.calculate_measurement_value(landmarks, definition)
 
-                # 1. 측정값 저장 (None이어도 저장)
-                measurement_value = Pool2ndTagValue(
-                    profile_id=profile_id,
-                    tag_name=definition.tag_name,
-                    side=definition.side,
-                    측정값=calculated_value
-                )
-                session.add(measurement_value)
+                # 1. 측정값 저장 (3구간비율 제외, None이어도 저장)
+                if definition.measurement_type != "3구간비율":
+                    measurement_value = Pool2ndTagValue(
+                        profile_id=profile_id,
+                        tag_name=definition.tag_name,
+                        side=definition.side,
+                        측정값=calculated_value
+                    )
+                    session.add(measurement_value)
 
-                # 2. 값이 있을 때만 임계값 분류 및 태그 저장
-                if calculated_value is not None:
+                # 2. 값이 있을 때만 임계값 분류 및 태그 저장 (3구간비율도 제외)
+                if calculated_value is not None and definition.measurement_type != "3구간비율":
                     tag_value = self.classify_by_threshold(session, definition.tag_name, calculated_value)
 
                     if tag_value:
@@ -543,30 +545,27 @@ class DatabaseCRUD:
         session.add(profile)
         session.flush()  # ID 생성을 위해
 
-        # PoolBasicRatio 객체 생성 (수치 데이터)
-        basic_ratio = PoolBasicRatio(
-            profile_id=profile.id,
-            roll_angle=json_data.get('rollAngle', 0),
-            face_basic_ratio=json_data.get('faceRatio', ''),
-            ratio_1=ratio_components.get('ratio_1'),
-            ratio_2=ratio_components.get('ratio_2'),
-            ratio_3=ratio_components.get('ratio_3'),
-            ratio_4=ratio_components.get('ratio_4'),
-            ratio_5=ratio_components.get('ratio_5'),
-            ratio_2_1=ratio_components.get('ratio_2_1'),
-            ratio_3_1=ratio_components.get('ratio_3_1'),
-            ratio_3_2=ratio_components.get('ratio_3_2')
-        )
-
-        session.add(basic_ratio)
-
-        # 태그 처리 (통합된 메서드 사용)
+        # 태그 및 landmarks 저장 (통합된 메서드 사용)
         self.process_tags_for_face(
             session,
             profile.id,
             json_data.get('tags', []),
             json_data.get('landmarks', [])
         )
+
+        session.flush()  # landmarks가 DB에 저장되도록
+
+        # PoolBasicRatio는 landmarks로부터 자동 계산
+        # ratio_storage의 calculate_and_save_ratios 함수가 처리
+        options = {
+            'hairline_point': None,  # user_clicked 헤어라인은 JSON에 없으면 None
+            'double_eyelid': False,  # 기본값
+            'image_width': 800,
+            'image_height': 600
+        }
+
+        # landmarks 저장 후 비율 계산
+        calculate_and_save_ratios(session, profile.id, options)
 
         return profile
 

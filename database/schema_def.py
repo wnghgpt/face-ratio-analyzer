@@ -23,7 +23,7 @@ class PoolProfile(Base):
     # 관계
     tags = relationship("PoolTag", back_populates="profile", cascade="all, delete-orphan")
     landmarks_points = relationship("PoolLandmark", back_populates="profile", cascade="all, delete-orphan")
-    basic_ratio = relationship("PoolBasicRatio", back_populates="profile", cascade="all, delete-orphan", uselist=False)
+    basic_ratio = relationship("PoolBasicRatio", back_populates="profile", cascade="all, delete-orphan")
     measurement_values = relationship("Pool2ndTagValue", back_populates="profile", cascade="all, delete-orphan")
 
     def to_dict(self):
@@ -37,9 +37,9 @@ class PoolProfile(Base):
             'tags': [tag.tag_name for tag in self.tags]
         }
 
-        # basic_ratio가 있으면 포함
+        # basic_ratio가 있으면 포함 (리스트 형태)
         if self.basic_ratio:
-            result['basic_ratio'] = self.basic_ratio.to_dict()
+            result['basic_ratio'] = [ratio.to_dict() for ratio in self.basic_ratio]
 
         # landmarks가 있으면 포함
         if self.landmarks_points:
@@ -51,48 +51,33 @@ class PoolProfile(Base):
 
 
 class PoolBasicRatio(Base):
-    """풀 기본 비율 테이블 - 정규화"""
+    """풀 기본 비율 테이블 - landmarks에서 직접 계산"""
     __tablename__ = 'pool_basic_ratio'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    profile_id = Column(Integer, ForeignKey('pool_profiles.id'), nullable=False, unique=True)
-
-    # 기본 각도
-    roll_angle = Column(Float)
-
-    # 원본 비율 데이터
-    face_basic_ratio = Column(String(100))  # "1:1.2:0.8" 형태
-
-    # 파싱된 비율 컴포넌트들
-    ratio_1 = Column(Float)
-    ratio_2 = Column(Float)
-    ratio_3 = Column(Float)
-    ratio_4 = Column(Float)
-    ratio_5 = Column(Float)
-
-    # 계산된 비율들
-    ratio_2_1 = Column(Float)  # ratio_2 / ratio_1
-    ratio_3_1 = Column(Float)  # ratio_3 / ratio_1
-    ratio_3_2 = Column(Float)  # ratio_3 / ratio_2
+    profile_id = Column(Integer, ForeignKey('pool_profiles.id'), nullable=False)
+    part = Column(String(50), nullable=False)  # overall, eyebrow, eye, nose, mouth
+    ratio_type = Column(String(50), nullable=False)  # pupil_white_ratio, canthal_tilt 등
+    side = Column(String(10), nullable=False, default="center")  # left, right, center
+    calculated_value = Column(String(100))  # 계산된 값 ("1:0.85:1.12", "5.2°", "0.123" 등)
 
     # 관계
     profile = relationship("PoolProfile", back_populates="basic_ratio")
+
+    # 인덱스 추가
+    __table_args__ = (
+        Index('idx_profile_part_type_side', 'profile_id', 'part', 'ratio_type', 'side'),
+    )
 
     def to_dict(self):
         """딕셔너리로 변환"""
         return {
             'id': self.id,
             'profile_id': self.profile_id,
-            'roll_angle': self.roll_angle,
-            'face_basic_ratio': self.face_basic_ratio,
-            'ratio_1': self.ratio_1,
-            'ratio_2': self.ratio_2,
-            'ratio_3': self.ratio_3,
-            'ratio_4': self.ratio_4,
-            'ratio_5': self.ratio_5,
-            'ratio_2_1': self.ratio_2_1,
-            'ratio_3_1': self.ratio_3_1,
-            'ratio_3_2': self.ratio_3_2
+            'part': self.part,
+            'ratio_type': self.ratio_type,
+            'side': self.side,
+            'calculated_value': self.calculated_value
         }
 
 

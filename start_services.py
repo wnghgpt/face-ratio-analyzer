@@ -18,10 +18,10 @@ def main():
     print("🚀 Face Ratio Analyzer 서비스 시작")
     print("=" * 60)
 
-    # 1. 데이터베이스 설정
-    print("1️⃣ 데이터베이스 설정...")
+    # 1. 데이터베이스 설정 (개발 모드: 전체 초기화)
+    print("1️⃣ 데이터베이스 설정 (개발 모드)...")
     schema_manager = SchemaManager()
-    if not schema_manager.setup_database():
+    if not schema_manager.reset_database_dev():
         print("❌ 데이터베이스 설정 실패. 종료합니다.")
         return
 
