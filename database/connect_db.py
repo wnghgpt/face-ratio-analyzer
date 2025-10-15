@@ -22,12 +22,12 @@ class DatabaseManager:
     - 파일 감시 및 자동 동기화
     """
     def __init__(self, db_url=None):
-        # MariaDB 연결
+        # DB 연결: 환경변수 우선 (PostgreSQL 권장)
         if db_url is None:
-            db_url = "mysql+pymysql://wnghgpt:dnlsehdn@localhost/face_analysis"
+            db_url = os.getenv("DATABASE_URL", "postgresql+psycopg2://faceapp:password@localhost:5432/face_analysis")
 
         self.db_url = db_url
-        self.engine = create_engine(db_url, echo=False)
+        self.engine = create_engine(db_url, echo=False, pool_pre_ping=True)
         self.SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=self.engine)
 
         # 데이터베이스 초기화

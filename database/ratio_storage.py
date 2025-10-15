@@ -1,7 +1,7 @@
 """
 계산된 비율을 DB에 저장하는 유틸리티
 """
-from database.schema_def import PoolBasicRatio, PoolLandmark
+from database.schema_def import PoolBasicRatio, PoolLandmark, PoolProfile
 from database.ratio_calculator import RatioCalculator
 
 
@@ -45,8 +45,9 @@ def calculate_and_save_ratios(session, profile_id, options=None):
     # 3. 기존 비율 데이터 삭제 (재계산 시)
     session.query(PoolBasicRatio).filter_by(profile_id=profile_id).delete()
 
-    # 4. 새로운 비율 데이터 저장
+    # 4. 새로운 비율 데이터 저장 + JSONB 병행 저장
     saved_count = 0
+    ratios_json = []
     for result in ratio_results:
         # eyebrow_detail처럼 좌우 값을 별도로 반환하는 경우 처리
         if isinstance(result['calculated_value'], dict):
@@ -61,6 +62,13 @@ def calculate_and_save_ratios(session, profile_id, options=None):
                 )
                 session.add(ratio_record)
                 saved_count += 1
+
+                ratios_json.append({
+                    'part': result['part'],
+                    'ratio_type': result['ratio_type'],
+                    'side': side,
+                    'calculated_value': value
+                })
         else:
             # 일반적인 경우
             ratio_record = PoolBasicRatio(
@@ -73,7 +81,20 @@ def calculate_and_save_ratios(session, profile_id, options=None):
             session.add(ratio_record)
             saved_count += 1
 
+            ratios_json.append({
+                'part': result['part'],
+                'ratio_type': result['ratio_type'],
+                'side': result['side'],
+                'calculated_value': result['calculated_value']
+            })
+
     session.commit()
+
+    # PoolProfile.ratios_json에 병행 저장
+    profile = session.query(PoolProfile).filter_by(id=profile_id).first()
+    if profile is not None:
+        profile.ratios_json = ratios_json
+        session.commit()
 
     print(f"Saved {saved_count} ratio records for profile_id={profile_id}")
     return saved_count

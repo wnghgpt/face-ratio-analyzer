@@ -4,7 +4,7 @@
 """
 import os
 import sys
-from sqlalchemy import text
+from sqlalchemy import text, inspect
 
 # 프로젝트 루트를 Python 경로에 추가
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -26,11 +26,13 @@ class SchemaManager:
             Base.metadata.create_all(bind=self.engine)
             print("✅ 모든 테이블 생성 완료")
 
-            # 생성된 테이블 확인
-            with db_manager.get_session() as session:
-                result = session.execute(text("SHOW TABLES")).fetchall()
-                tables = [row[0] for row in result]
+            # 생성된 테이블 확인 (DB 독립적)
+            try:
+                inspector = inspect(self.engine)
+                tables = inspector.get_table_names()
                 print(f"📋 생성된 테이블: {', '.join(tables)}")
+            except Exception as e:
+                print(f"⚠️ 테이블 목록 조회 실패: {e}")
 
         except Exception as e:
             print(f"❌ 테이블 생성 실패: {e}")
@@ -237,11 +239,13 @@ class SchemaManager:
             Base.metadata.create_all(bind=self.engine)
             print("✅ 생성 완료")
 
-            # 생성된 테이블 확인
-            with db_manager.get_session() as session:
-                result = session.execute(text("SHOW TABLES")).fetchall()
-                tables = [row[0] for row in result]
+            # 생성된 테이블 확인 (DB 독립적)
+            try:
+                inspector = inspect(self.engine)
+                tables = inspector.get_table_names()
                 print(f"📋 생성된 테이블 ({len(tables)}개): {', '.join(tables)}")
+            except Exception as e:
+                print(f"⚠️ 테이블 목록 조회 실패: {e}")
 
             # 3. 초기 데이터 로드 (무조건 로드)
             print("\n📊 초기 데이터 로드 중...")

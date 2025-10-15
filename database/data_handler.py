@@ -22,6 +22,7 @@ from datetime import datetime
 import math
 from pathlib import Path
 from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session
 
 class DatabaseCRUD:
     """데이터베이스 전용 서비스"""
@@ -489,17 +490,40 @@ class DatabaseCRUD:
                 print(f"Warning: Invalid JSON in landmarks for {id_field} {profile_id}")
                 return
 
-        # 각 landmark 포인트를 테이블에 저장 (소수점 3자리까지만)
+        # 각 landmark 포인트를 테이블에 저장 (소수점 3자리까지만) + JSONB 병행 저장
+        jsonb_landmarks = []
         for landmark in landmarks:
             if isinstance(landmark, dict) and 'mpidx' in landmark:
+                mp_idx = landmark.get('mpidx')
+                x = round(landmark.get('x', 0.0), 3)
+                y = round(landmark.get('y', 0.0), 3)
+                z_val = round(landmark.get('z', 0.0), 3) if landmark.get('z') is not None else None
+
                 landmark_obj = LandmarkModel(
                     **{id_field: profile_id},
-                    mp_idx=landmark.get('mpidx'),
-                    x=round(landmark.get('x', 0.0), 3),
-                    y=round(landmark.get('y', 0.0), 3),
-                    z=round(landmark.get('z', 0.0), 3) if landmark.get('z') is not None else None
+                    mp_idx=mp_idx,
+                    x=x,
+                    y=y,
+                    z=z_val
                 )
                 session.add(landmark_obj)
+
+                # JSONB용 구조(mp_idx 키 사용)
+                jsonb_item = {
+                    'mp_idx': mp_idx,
+                    'x': float(x),
+                    'y': float(y)
+                }
+                if z_val is not None:
+                    jsonb_item['z'] = float(z_val)
+                jsonb_landmarks.append(jsonb_item)
+
+        # PoolProfile.landmarks_json에 병행 저장 (Pool만 해당)
+        if not is_user:
+            from database.schema_def import PoolProfile
+            profile = session.query(PoolProfile).filter_by(id=profile_id).first()
+            if profile is not None:
+                profile.landmarks_json = jsonb_landmarks
 
     def remove_all_tags_for_face(self, session, profile_id: int):
         """특정 프로필의 모든 태그 삭제"""

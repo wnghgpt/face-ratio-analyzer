@@ -6,6 +6,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker
 from datetime import datetime
 import json
+from sqlalchemy.dialects.postgresql import JSONB
 
 Base = declarative_base()
 
@@ -18,7 +19,11 @@ class PoolProfile(Base):
     name = Column(String(255), nullable=False)
     json_file_path = Column(String(500))  # 원본 JSON 파일 경로
     image_file_path = Column(String(500))  # 원본 이미지 파일 경로
-    upload_date = Column(DateTime, default=datetime.utcnow)
+    upload_date = Column(DateTime(timezone=True), default=datetime.utcnow)
+
+    # PostgreSQL 최적화: 랜드마크/비율 JSONB 저장 (병행 경로)
+    landmarks_json = Column(JSONB, nullable=False, default=list)
+    ratios_json = Column(JSONB, nullable=False, default=list)
 
     # 관계
     tags = relationship("PoolTag", back_populates="profile", cascade="all, delete-orphan")
@@ -151,7 +156,7 @@ class Pool2ndTagDef(Base):
     분모_점2 = Column(Integer)
 
     # 곡률 측정용 (곡률일 때만 사용)
-    곡률점리스트 = Column(JSON)
+    곡률점리스트 = Column(JSONB)
 
     # unique constraint: (tag_name, side) 조합이 unique
     __table_args__ = (
@@ -235,7 +240,7 @@ class UserProfile(Base):
     email = Column(String(255), unique=True)                # 이메일
     age = Column(Integer)                                   # 나이
     gender = Column(String(10))                             # 성별
-    created_at = Column(DateTime, default=datetime.utcnow)  # 가입 날짜
+    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)  # 가입 날짜
     json_file_path = Column(String(500))                    # JSON 파일 경로
     image_file_path = Column(String(500))                   # 얼굴 이미지 경로
 
@@ -355,8 +360,8 @@ class PoolTagRelation(Base):
     __tablename__ = 'pool_tag_relation'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    parent_tags = Column(JSON, nullable=False)      # 상위 태그들 (배열)
-    child_tags = Column(JSON, nullable=False)       # 하위 태그들 (배열)
+    parent_tags = Column(JSONB, nullable=False)      # 상위 태그들 (배열)
+    child_tags = Column(JSONB, nullable=False)       # 하위 태그들 (배열)
     parent_level = Column(Integer, nullable=False)  # parent가 몇 차? 0 or 1
 
     def to_dict(self):
