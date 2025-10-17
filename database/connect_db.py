@@ -24,7 +24,7 @@ class DatabaseManager:
     def __init__(self, db_url=None):
         # DB 연결: 환경변수 우선 (PostgreSQL 권장)
         if db_url is None:
-            db_url = os.getenv("DATABASE_URL", "postgresql+psycopg2://faceapp:password@localhost:5432/face_analysis")
+            db_url = os.getenv("DATABASE_URL", "postgresql+psycopg2://wnghgpt:dnlsehdn12@localhost:5432/face_analysis")
 
         self.db_url = db_url
         self.engine = create_engine(db_url, echo=False, pool_pre_ping=True)
