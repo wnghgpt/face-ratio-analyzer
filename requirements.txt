@@ -1,16 +1,15 @@
-# Core dependencies
-streamlit>=1.35.0
+# Streamlit for UI
+streamlit>=1.28.0
+
+# Data processing
 pandas>=2.0.0
-plotly>=5.15.0
-scikit-learn>=1.3.0
 numpy>=1.24.0
 
-# Database
-sqlalchemy>=2.0.0
-PyMySQL>=1.0.0  # MariaDB/MySQL connector
+# Visualization
+plotly>=5.17.0
 
-# File watching (for auto_import.py)
-watchdog>=3.0.0
-
-# Optional: Advanced analysis
+# Scientific computing
 scipy>=1.10.0
+
+# Database (face-db-core provides ORM and schema)
+-e ../face-db-core

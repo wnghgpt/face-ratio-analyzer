@@ -8,7 +8,7 @@ import json
 from typing import Dict, List, Optional, Tuple
 from pathlib import Path
 from sqlalchemy.orm import Session
-from database.schema_def import (
+from face_db_core.schema_def import (
     User2ndTagValue, Pool2ndTagValue, PoolTagRelation
 )
 import numpy as np

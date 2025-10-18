@@ -15,8 +15,11 @@ from pydantic import BaseModel
 from typing import List, Optional, Dict
 import json
 
-from database.connect_db import db_manager
-from database.data_handler import DatabaseCRUD
+from face_db_core import DatabaseManager
+from face_db_core.data_handler import DatabaseCRUD
+
+# Initialize db_manager
+db_manager = DatabaseManager()
 from utils.user_analyzer import UserAnalyzer
 from sqlalchemy.orm import Session
 
@@ -122,7 +125,7 @@ async def upload_user_json(
         password = "hashed_password"  # TODO: 해시 처리 필요
 
         # User 생성 및 landmarks 저장 (기존 data_handler 활용)
-        from database.schema_def import UserProfile, UserLandmark
+        from face_db_core.schema_def import UserProfile, UserLandmark
         user = UserProfile(
             name=name,
             login_id=login_id,
@@ -137,7 +140,7 @@ async def upload_user_json(
         crud_service.save_landmarks_to_table(db, user.user_id, landmarks, is_user=True)
 
         # 2nd tag 측정값 계산 (기존 calculate_measurement_value 활용)
-        from database.schema_def import Pool2ndTagDef, User2ndTagValue
+        from face_db_core.schema_def import Pool2ndTagDef, User2ndTagValue
 
         tag_defs = db.query(Pool2ndTagDef).all()
         for tag_def in tag_defs:
@@ -221,7 +224,7 @@ async def get_pool_profiles(
 ):
     """Pool 프로필 목록 조회"""
     try:
-        from database.schema_def import PoolProfile
+        from face_db_core.schema_def import PoolProfile
         profiles = db.query(PoolProfile).offset(skip).limit(limit).all()
         return {
             "success": True,

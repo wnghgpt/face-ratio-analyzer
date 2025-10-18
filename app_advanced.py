@@ -13,9 +13,12 @@ from pathlib import Path
 from collections import Counter
 from itertools import combinations
 
-# Database
-from database.connect_db import db_manager
-from database.data_handler import crud_service
+# Database (face-db-core)
+from face_db_core import DatabaseManager
+from face_db_core.data_handler import crud_service
+
+# Initialize db_manager
+db_manager = DatabaseManager()
 
 # Utils modules
 from utils.landmark_calculator import calculate_landmarks_metric, calculate_length

@@ -10,8 +10,10 @@ from pathlib import Path
 project_root = Path(__file__).parent
 sys.path.append(str(project_root))
 
-from database.schema_manager import SchemaManager
-from database.connect_db import db_manager
+from face_db_core import SchemaManager, DatabaseManager
+
+# Initialize db_manager
+db_manager = DatabaseManager()
 
 def main():
     """메인 함수"""
